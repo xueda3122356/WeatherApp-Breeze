@@ -100,11 +100,11 @@ class MainActivity : AppCompatActivity() {
         // Set a click listener on the search button
         binding.searchButton.setOnClickListener {
             // Get the zip code entered by the user
-            val zipCode = binding.locationInput.text.toString()
+            val location = binding.locationInput.text.toString()
             binding.locationInput.setText("")
 
             // Call the getMyData function with the entered zip code
-            getMyData(zipCode)
+            getMyData(location)
         }
 
         // Call the getMyData function with a default zip code
@@ -119,7 +119,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Define a function to retrieve weather data from the API
-    private fun getMyData(zipCode: String) {
+    private fun getMyData(location: String) {
         // Create a retrofit builder with the base URL and Gson converter
         val retrofitBuilder = Retrofit.Builder()
             .addConverterFactory(GsonConverterFactory.create())
@@ -128,7 +128,7 @@ class MainActivity : AppCompatActivity() {
             .create(ApiInterface::class.java)
 
         // Get the weather data for the given zip code
-        val retrofitData = retrofitBuilder.getForecastData(zipCode)
+        val retrofitData = retrofitBuilder.getForecastData(location)
 
         // Handle the response using a callback
         retrofitData.enqueue(object : Callback<weatherData> {
@@ -140,7 +140,10 @@ class MainActivity : AppCompatActivity() {
                 }
                 // Otherwise, display an error message
                 else {
-                    Toast.makeText(applicationContext, "Zipcode Error", Toast.LENGTH_LONG).show()
+                    Toast.makeText(applicationContext,
+                        "Zipcode or location Error",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
 
