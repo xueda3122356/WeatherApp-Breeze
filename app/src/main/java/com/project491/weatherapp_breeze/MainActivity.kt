@@ -100,7 +100,8 @@ class MainActivity : AppCompatActivity() {
         // Set a click listener on the search button
         binding.searchButton.setOnClickListener {
             // Get the zip code entered by the user
-            val zipCode = binding.zipCodeInput.text.toString()
+            val zipCode = binding.locationInput.text.toString()
+            binding.locationInput.setText("")
 
             // Call the getMyData function with the entered zip code
             getMyData(zipCode)

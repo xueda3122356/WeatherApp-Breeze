@@ -119,13 +119,12 @@
 
         <!-- A text input for the user to enter their zip code -->
         <EditText
-            android:id="@+id/zipCodeInput"
+            android:id="@+id/locationInput"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@android:color/transparent"
-            android:hint="@string/zip_code_hint"
-            android:inputType="number"
+            android:inputType="text"
             android:maxLines="1"
             android:paddingStart="10dp"
             android:paddingEnd="10dp"
