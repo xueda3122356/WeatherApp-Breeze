@@ -170,47 +170,35 @@
 
     <LinearLayout
         android:id="@+id/weather_layout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_width="409dp"
+        android:layout_height="82dp"
         android:layout_margin="20dp"
         android:background="@color/lightBlue"
         android:gravity="center"
         android:orientation="horizontal"
         app:layout_constraintBottom_toTopOf="@+id/tem1_layout"
-        app:layout_constraintTop_toBottomOf="@+id/search_layout"
-        tools:layout_editor_absoluteX="30dp">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/search_layout">
+
+
+        <TextView
+            android:id="@+id/currentTempTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="78*C"
+            android:textSize="60dp"></TextView>
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="vertical"
-            >
-
-
-            <TextView
-                android:id="@+id/currentTempTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:text="78*C"
-                android:textSize="60dp"></TextView>
-        </LinearLayout>
-
-
-
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:layout_marginHorizontal="5dp"
-            >
+            android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                >
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/weather"
@@ -223,12 +211,11 @@
                 </TextView>
 
 
-
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="end">
+                    android:gravity="end"
+                    android:orientation="horizontal">
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -291,7 +278,6 @@
                 </LinearLayout>
 
             </LinearLayout>
-
 
 
         </LinearLayout>

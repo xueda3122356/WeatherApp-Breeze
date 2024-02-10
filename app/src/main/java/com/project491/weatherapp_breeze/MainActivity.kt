@@ -1,18 +1,21 @@
 package com.project491.weatherapp_breeze
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.project491.weatherapp_breeze.data.ApiInterface
+import com.project491.weatherapp_breeze.data.models.weatherData
 import com.project491.weatherapp_breeze.databinding.ActivityMainBinding
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.text.SimpleDateFormat
 import java.util.Calendar
 
 // Define the base URL for the API
@@ -173,8 +176,10 @@ class MainActivity : AppCompatActivity() {
         // Display current temperature and condition, and min and max temperature
         val currentTempString = getString(R.string.current_temp, responseBody.current.temp_f.toString())
         currentTempTextView.text = currentTempString
+        Log.i("MayTag", "currentTempString : ${currentTempString}")
         val maxTempString = getString(R.string.temperature, responseBody.forecast.forecastday[0].day.maxtemp_f)
         maxTemp.text = maxTempString
+        Log.i("MayTag", "maxTempString : ${maxTempString}")
         val minTempString = getString(R.string.temperature, responseBody.forecast.forecastday[0].day.mintemp_f)
         minTemp.text = minTempString
         val weatherConditon = responseBody.forecast.forecastday[0]
@@ -182,7 +187,7 @@ class MainActivity : AppCompatActivity() {
 
         // forecast within 4 hours
         val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-        val forecastDay = responseBody.forecast.forecastday[0]
+
 
         // Check if the hour array has enough elements before accessing values
         for (i in 1..4) {
@@ -230,12 +235,12 @@ class MainActivity : AppCompatActivity() {
         btnSwitch.setOnClickListener()
         {
             if (btnSwitch.isChecked) {
-                val currentTempString = responseBody.forecast.forecastday[0].hour[0]
+                val currentTempString = responseBody.current
                 currentTempTextView.text = "${currentTempString.temp_c}°C"
                 val maxTempString = responseBody.forecast.forecastday[0]
                 maxTemp.text = "${maxTempString.day.maxtemp_c}°C"
                 val minTempString = responseBody.forecast.forecastday[0]
-                minTemp.text = "${maxTempString.day.mintemp_c}°C"
+                minTemp.text = "${minTempString.day.mintemp_c}°C"
                 for (i in 1..4) {
                     val hourIndex = if (currentHour + i >= 24) (currentHour + i) % 24 else currentHour + i
                     val dayIndex = if (currentHour + i >= 24) 1 else 0
@@ -277,7 +282,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } else {
-                val currentTempString = responseBody.forecast.forecastday[0].hour[0]
+                val currentTempString = responseBody.current
                 currentTempTextView.text = "${currentTempString.temp_f}°F"
                 val maxTempString = responseBody.forecast.forecastday[0]
                 maxTemp.text = "${maxTempString.day.maxtemp_f}°F"
