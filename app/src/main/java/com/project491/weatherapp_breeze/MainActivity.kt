@@ -1,12 +1,24 @@
 package com.project491.weatherapp_breeze
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.project491.weatherapp_breeze.data.ApiInterface
 import com.project491.weatherapp_breeze.data.models.weatherData
 import com.project491.weatherapp_breeze.databinding.ActivityMainBinding
@@ -58,6 +70,10 @@ class MainActivity : AppCompatActivity() {
     // Declared variable for switch button
     private lateinit var btnSwitch: Switch
 
+    // Declared variable for Notification
+    private val CHANNEL_ID = "channel_id_01"
+    private val notificationID = 101
+
 
     // Define the activity creation function
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,6 +116,9 @@ class MainActivity : AppCompatActivity() {
         // Get the status for switch button
         btnSwitch = binding.btnSwitch
 
+        //create notification
+        createNotification()
+
         // Set a click listener on the search button
         binding.searchButton.setOnClickListener {
             // Get the zip code entered by the user
@@ -119,7 +138,13 @@ class MainActivity : AppCompatActivity() {
 
         // Set the headerLocationName TextView to horizontally scroll if it's one word and too long
         binding.headerLocationName.setHorizontallyScrolling(true)
+
+        // set a click listener on the Forecast button
+        binding.ForecastButton.setOnClickListener(){
+            sendNotification()
+        }
     }
+
 
     // Define a function to retrieve weather data from the API
     private fun getMyData(location: String) {
@@ -310,6 +335,51 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun createNotification(){
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+        {
+            val name = "Weather Breeze"
+            val descriptionText = "Please don't forget to your umbrella"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+
+            val channel = NotificationChannel(CHANNEL_ID,name,importance).apply {
+                description = descriptionText
+            }
+
+            val notificationManager : NotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+
+
+        }
+    }
+
+    private fun sendNotification(){
+        val intent: Intent = Intent(this, ForecastPage::class.java).apply {
+            flags =Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, intent, 0)
+
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.sunny)
+            .setContentTitle("Weather Breeze")
+            .setContentText("Notification Example")
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+
+        with(NotificationManagerCompat.from(this)){
+            if (ActivityCompat.checkSelfPermission(
+                    applicationContext,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+
+                return
+            }
+            notify(notificationID,builder.build())
         }
     }
 }
