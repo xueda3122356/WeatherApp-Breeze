@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var maxTemp: TextView
     private lateinit var minTemp: TextView
     private lateinit var weather: TextView
-    // Declard variables for forecast
+    // Declare variables for forecast
     private lateinit var timeForecast1: TextView
     private lateinit var timeForecast2: TextView
     private lateinit var timeForecast3: TextView
@@ -357,6 +357,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendNotification(){
+
         val intent: Intent = Intent(this, ForecastPage::class.java).apply {
             flags =Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
