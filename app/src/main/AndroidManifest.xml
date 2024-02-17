@@ -16,15 +16,26 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Weather491"
         tools:targetApi="31">
-        <activity android:name=".ForecastPage">
 
+        <!-- Added android:exported attribute set to true for StartPage activity -->
+        <activity android:name=".StartPage"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
+
+        <!-- Assuming ForecastPage doesn't need an intent filter, the exported attribute is not required.
+             However, if it is accessible from outside the app (e.g., via a shortcut), you would need to set this attribute. -->
+        <activity android:name=".ForecastPage" />
+
+        <!-- MainActivity already has the exported attribute set to true -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
