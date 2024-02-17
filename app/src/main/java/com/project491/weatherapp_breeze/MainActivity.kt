@@ -124,13 +124,15 @@ class MainActivity : AppCompatActivity() {
             // Get the zip code entered by the user
             val location = binding.locationInput.text.toString()
             binding.locationInput.setText("")
+            saveLocation(location)
 
             // Call the getMyData function with the entered zip code
             getMyData(location)
         }
 
         // Call the getMyData function with a default zip code
-        getMyData("92831")
+        //getMyData("92831")
+        getMyData(loadLocation()!!)
 
         // Get the city and state text views
         cityTextView = binding.headerLocationNameCity
@@ -383,4 +385,18 @@ class MainActivity : AppCompatActivity() {
             notify(notificationID,builder.build())
         }
     }
+
+    private fun saveLocation(location: String) {
+        val sharedPreferences = getSharedPreferences("sharedPrefs", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.apply {
+            putString("STRING_KEY", location)
+        }.apply()
+    }
+
+    private fun loadLocation(): String? {
+        val sharedPreferences = getSharedPreferences("sharedPrefs", Context.MODE_PRIVATE)
+        return sharedPreferences.getString("STRING_KEY", "92831")
+    }
+
 }
