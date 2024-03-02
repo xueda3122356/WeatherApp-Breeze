@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn = "navigation_view">
+
+
+    <item
+        android:id="@+id/Home"
+        android:title="Home"
+        android:icon="@drawable/baseline_home_24">
+
+
+    </item>
+
+    <item
+        android:id="@+id/nav_unit_switch"
+        android:title="Units(°F / °C)"
+        android:icon="@drawable/baseline_smart_button_24"
+        app:actionLayout="@layout/switch_item"
+        app:showAsAction="always" />
+</menu>

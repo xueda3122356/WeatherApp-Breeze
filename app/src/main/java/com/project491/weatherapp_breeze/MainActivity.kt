@@ -11,17 +11,30 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.MenuItem
+import android.view.View
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.motion.widget.Debug.getLocation
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.drawerlayout.widget.DrawerLayout
+import androidx.navigation.NavController
+import androidx.navigation.findNavController
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.navigateUp
+import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.navigation.NavigationView
 import com.project491.weatherapp_breeze.adapter.RvAdapter
 import com.project491.weatherapp_breeze.data.ForecastModels.ForecastData
 import com.project491.weatherapp_breeze.databinding.ActivityMainBinding
+import com.project491.weatherapp_breeze.databinding.NavHeaderBinding
 import com.project491.weatherapp_breeze.utils.RetrofitInstance
 import com.squareup.picasso.Picasso
 import kotlinx.coroutines.Dispatchers
@@ -44,13 +57,13 @@ import kotlin.math.max
 private const val bURL = "https://api.weatherapi.com/v1/"
 
 // Define the main activity class
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
     // Declare variable for view binding
     private lateinit var binding: ActivityMainBinding
+    private lateinit var headerBinding: NavHeaderBinding
     // Declare variables for location
     private lateinit var cityTextView: TextView
-    private lateinit var stateTextView: TextView
     // Declare variables for current weather
     private lateinit var currentTempTextView: TextView
     private lateinit var maxTemp: TextView
@@ -62,11 +75,21 @@ class MainActivity : AppCompatActivity() {
     private val notificationID = 101
 
 
+    // Declared variable for toolbar
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var navView: NavigationView
+    private lateinit var appBarConfiguration: AppBarConfiguration
+    private lateinit var navController: NavController
+    private lateinit var nav_city_name: TextView
+
+
     // Define the activity creation function
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Inflate the layout using view binding
         binding = ActivityMainBinding.inflate(layoutInflater)
+        headerBinding = NavHeaderBinding.inflate(layoutInflater)
+        setContentView(headerBinding.root)
         setContentView(binding.root)
 
 
@@ -79,6 +102,11 @@ class MainActivity : AppCompatActivity() {
         minTemp = binding.tvMinTemp
 
         // Get the status for switch button
+
+
+        // Get navigation view
+        drawerLayout = binding.drawerLayout
+        navView = binding.navView
 
 
         //create notification
@@ -103,6 +131,7 @@ class MainActivity : AppCompatActivity() {
 
         // Get the city text views
         cityTextView = binding.headerLocationNameCity
+        nav_city_name = headerBinding.navCityName
 
         // Set the headerLocationName TextView to horizontally scroll if it's one word and too long
         //binding.headerLocationName.setHorizontallyScrolling(true)
@@ -111,6 +140,28 @@ class MainActivity : AppCompatActivity() {
         binding.ForecastButton.setOnClickListener(){
             sendNotification()
         }
+
+        // setup toolbar and navigation drawer
+        binding.apply {
+
+            setSupportActionBar(toolbar)
+            navView.bringToFront()
+        }
+
+        navController = findNavController(R.id.fragment)
+        binding.navView.setupWithNavController(navController)
+
+        appBarConfiguration = AppBarConfiguration(navController.graph, binding.drawerLayout)
+        setupActionBarWithNavController(navController, appBarConfiguration)
+
+
+
+    }
+
+
+    override fun onSupportNavigateUp(): Boolean {
+        val navController = findNavController(R.id.fragment)
+        return navController.navigateUp(appBarConfiguration)|| super.onSupportNavigateUp()
     }
 
     private fun getForecastData(location: String) {
@@ -207,7 +258,9 @@ class MainActivity : AppCompatActivity() {
                             )
                         }"
 
+
                     }
+
 
                 }
             }
@@ -283,6 +336,9 @@ class MainActivity : AppCompatActivity() {
         return sharedPreferences.getString("STRING_KEY", "92831")
     }
 
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        TODO("Not yet implemented")
+    }
 
 
 }
