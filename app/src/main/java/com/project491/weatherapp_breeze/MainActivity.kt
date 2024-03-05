@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -21,6 +22,8 @@ import androidx.constraintlayout.motion.widget.Debug.getLocation
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.view.GravityCompat
+import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
@@ -32,6 +35,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.navigation.NavigationView
 import com.project491.weatherapp_breeze.adapter.RvAdapter
+import com.project491.weatherapp_breeze.adapter.RvAdapterUnitSwitch
 import com.project491.weatherapp_breeze.data.ForecastModels.ForecastData
 import com.project491.weatherapp_breeze.databinding.ActivityMainBinding
 import com.project491.weatherapp_breeze.databinding.NavHeaderBinding
@@ -53,15 +57,13 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.max
 
-// Define the base URL for the API
-private const val bURL = "https://api.weatherapi.com/v1/"
+
 
 // Define the main activity class
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
     // Declare variable for view binding
     private lateinit var binding: ActivityMainBinding
-    private lateinit var headerBinding: NavHeaderBinding
     // Declare variables for location
     private lateinit var cityTextView: TextView
     // Declare variables for current weather
@@ -80,7 +82,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var navView: NavigationView
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var navController: NavController
-    private lateinit var nav_city_name: TextView
 
 
     // Define the activity creation function
@@ -88,8 +89,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onCreate(savedInstanceState)
         // Inflate the layout using view binding
         binding = ActivityMainBinding.inflate(layoutInflater)
-        headerBinding = NavHeaderBinding.inflate(layoutInflater)
-        setContentView(headerBinding.root)
         setContentView(binding.root)
 
 
@@ -102,6 +101,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         minTemp = binding.tvMinTemp
 
         // Get the status for switch button
+
 
 
         // Get navigation view
@@ -120,18 +120,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             saveLocation(location)
 
             // Call the getMyData function with the entered zip code
-            getCurrentData(location)
-            getForecastData(location)
+            getCurrentDataCelsius(location)
+            getForecastDataCelsius(location)
         }
 
         // Call the getMyData function with a default zip code
         //getMyData("92831")
-        getCurrentData(loadLocation()!!)
-        getForecastData(loadLocation()!!)
+        getCurrentDataCelsius(loadLocation()!!)
+        getForecastDataCelsius(loadLocation()!!)
 
         // Get the city text views
         cityTextView = binding.headerLocationNameCity
-        nav_city_name = headerBinding.navCityName
 
         // Set the headerLocationName TextView to horizontally scroll if it's one word and too long
         //binding.headerLocationName.setHorizontallyScrolling(true)
@@ -154,8 +153,147 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         appBarConfiguration = AppBarConfiguration(navController.graph, binding.drawerLayout)
         setupActionBarWithNavController(navController, appBarConfiguration)
 
+        binding.navView.setNavigationItemSelectedListener(this)
+
+        // check unit switch
+        val menuItem = navView.menu.findItem(R.id.nav_unit_switch)
+        val actionView = menuItem.actionView as? Switch
+
+        if (actionView == null) {
+            val inflater =layoutInflater
+            val switchLayout = inflater.inflate(R.layout.switch_item, navView, false)
+            menuItem.actionView = switchLayout
+            val switch = switchLayout.findViewById<Switch>(R.id.switch_for_nav_drawer)
+            switch.setOnCheckedChangeListener{ _, isChecked ->
+                // Handle switch check/change event here
+                if(isChecked){
+                    getCurrentDataFahrenheit(loadLocation()!!)
+                    getForecastDataFahrenheit(loadLocation()!!)
+                }
+                else{
+                    getCurrentDataCelsius(loadLocation()!!)
+                    getForecastDataCelsius(loadLocation()!!)
+                }
+            }
+        } else {
+            actionView.setOnCheckedChangeListener { _, isChecked ->
+                // Handle switch check/change event here
+                if(isChecked){
+                    getCurrentDataFahrenheit(loadLocation()!!)
+                    getForecastDataFahrenheit(loadLocation()!!)
+                }
+                else{
+                    getCurrentDataCelsius(loadLocation()!!)
+                    getForecastDataCelsius(loadLocation()!!)
+                }
+            }
+        }
 
 
+    }
+
+    private fun getForecastDataFahrenheit(location: String) {
+        GlobalScope.launch(Dispatchers.IO) {
+            val response = try {
+                RetrofitInstance.apiForecast.getForecast(
+                    location,"imperial", applicationContext.getString(R.string.api_key)
+                )
+            } catch (e: IOException) {
+                Toast.makeText(applicationContext, "app error: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            } catch (e: HttpException) {
+                Toast.makeText(applicationContext, "http error: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            }
+            if (response.isSuccessful && response.body() != null) {
+                withContext(Dispatchers.Main) {
+                    val data = response.body()!!
+
+                    var forecastArray : ArrayList<ForecastData>
+
+                    forecastArray = data.list as ArrayList<ForecastData>
+
+                    val adapter = RvAdapterUnitSwitch(forecastArray)
+                    binding.rvForecast.adapter = adapter
+                    binding.rvForecast.layoutManager = GridLayoutManager(
+                        this@MainActivity,
+                        1,
+                        RecyclerView.HORIZONTAL,
+                        false)
+
+                }
+            }
+        }
+    }
+
+    private fun getCurrentDataFahrenheit(location: String) {
+        GlobalScope.launch(Dispatchers.IO) {
+            val response = try {
+                RetrofitInstance.apiCurrent.getCurrent(
+                    location, "imperial", applicationContext.getString(R.string.api_key)
+                )
+            } catch (e: IOException) {
+                Toast.makeText(applicationContext, "app error: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            } catch (e: HttpException) {
+                Toast.makeText(applicationContext, "http error: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            }
+            if (response.isSuccessful && response.body() != null) {
+                withContext(Dispatchers.Main) {
+                    val data = response.body()!!
+
+                    currentTempTextView.text = "${data.main.temp.toInt()} °F"
+
+                    val iconId = data.weather[0].icon
+
+                    val imgUrl = "https://api.openweathermap.org/img/w/$iconId.png"
+
+                    Picasso.get().load(imgUrl).into(binding.imgWeather)
+
+                    maxTemp.text = "Max temp: ${data.main.temp_max.toInt()} °F"
+                    minTemp.text = "Min temp: ${data.main.temp_min.toInt()} °F"
+
+                    binding.tvSunrise.text =
+                        dateFormatConverter(
+                            data.sys.sunrise.toLong()
+                        )
+
+                    binding.tvSunset.text =
+                        dateFormatConverter(
+                            data.sys.sunset.toLong()
+                        )
+
+                    binding.apply {
+                        tvStatus.text = data.weather[0].description
+                        tvWind.text = "${data.wind.speed.toString()} KM/H"
+                        cityTextView.text = "${data.name}"
+                        tvTemp.text = "${data.main.temp.toInt()} °F"
+                        tvFeelsLike.text = "Feels like: ${data.main.feels_like.toInt()} °F"
+                        tvMinTemp.text = "Min temp: ${data.main.temp_min.toInt()} °F"
+                        tvMaxTemp.text = "Max temp: ${data.main.temp_max.toInt()} °F"
+                        tvHumidity.text = "${data.main.humidity}"
+                        tvPressure.text = "${data.main.pressure}"
+                        tvUpdateTime.text = "Last Update: ${
+                            dateFormatConverter(
+                                data.dt.toLong()
+                            )
+                        }"
+
+
+                    }
+
+                    modifyHeader(data.name)
+
+
+
+                }
+            }
+        }
     }
 
 
@@ -164,7 +302,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         return navController.navigateUp(appBarConfiguration)|| super.onSupportNavigateUp()
     }
 
-    private fun getForecastData(location: String) {
+    private fun getForecastDataCelsius(location: String) {
         GlobalScope.launch(Dispatchers.IO) {
             val response = try {
                 RetrofitInstance.apiForecast.getForecast(
@@ -202,7 +340,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
     // Define a function to retrieve weather data from the API
-    private fun getCurrentData(location: String) {
+    private fun getCurrentDataCelsius(location: String) {
         GlobalScope.launch(Dispatchers.IO) {
             val response = try {
                 RetrofitInstance.apiCurrent.getCurrent(
@@ -260,6 +398,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
                     }
+
+                    modifyHeader(data.name)
+
 
 
                 }
@@ -334,6 +475,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun loadLocation(): String? {
         val sharedPreferences = getSharedPreferences("sharedPrefs", Context.MODE_PRIVATE)
         return sharedPreferences.getString("STRING_KEY", "92831")
+    }
+
+    private fun modifyHeader(location: String) {
+        val navigationView: NavigationView = findViewById(R.id.nav_view)
+        val headerView: View = navigationView.getHeaderView(0)
+        val userNameTextView: TextView = headerView.findViewById(R.id.nav_cityName)
+        userNameTextView.text = "${location}"
+
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {

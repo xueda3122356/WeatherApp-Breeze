@@ -6,10 +6,16 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationRequest
 
 class StartPage : AppCompatActivity() {
 
     private lateinit var locationEditText: EditText
+
+    // Declared variable for Google's API for location services
+
+    // Declared variable for location request
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_start_page)

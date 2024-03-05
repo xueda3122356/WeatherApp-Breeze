@@ -7,15 +7,16 @@
     android:padding="16dp"
     android:background="@color/lightGray"
     android:theme="@style/ThemeOverlay.AppCompat.Dark">
-    
+
     <TextView
         android:id="@+id/nav_cityName"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="center"
         android:text="City Name"
+        android:textColor="@color/black"
         android:textSize="60dp"
-        android:textColor="@color/black">
+        android:textStyle="bold">
 
 
     </TextView>
