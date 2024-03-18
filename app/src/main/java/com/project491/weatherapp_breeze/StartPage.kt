@@ -1,55 +1,45 @@
 package com.project491.weatherapp_breeze
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.Geocoder
+import android.location.Location
 import android.os.Bundle
+import android.os.Looper
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import java.util.Locale
 
 class StartPage : AppCompatActivity() {
 
-    private lateinit var locationEditText: EditText
-
-    // Declared variable for Google's API for location services
-
-    // Declared variable for location request
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_start_page)
 
         val startButton: Button = findViewById(R.id.startButton)
 
-        locationEditText = findViewById(R.id.locationEditText)
-
 
         startButton.setOnClickListener {
 
             val intent = Intent(this, MainActivity::class.java)
-            val location = locationEditText.text.toString()
-            if(location != "")
-            {
-                saveLocation(location)
-            }
 
+            // Move to main activity
             startActivity(intent)
 
+            // End start page
             finish()
         }
     }
 
-    private fun saveLocation(location: String) {
-        val sharedPreferences = getSharedPreferences("sharedPrefs", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        editor.apply {
-            putString("STRING_KEY", location)
-        }.apply()
-    }
 
-    private fun loadLocation(): String? {
-        val sharedPreferences = getSharedPreferences("sharedPrefs", Context.MODE_PRIVATE)
-        return sharedPreferences.getString("STRING_KEY", "92831")
-    }
 }

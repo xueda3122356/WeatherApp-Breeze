@@ -8,8 +8,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Geocoder
 import android.os.Build
 import android.os.Bundle
+import android.os.Looper
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
@@ -22,6 +24,7 @@ import androidx.constraintlayout.motion.widget.Debug.getLocation
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -33,6 +36,11 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
 import com.google.android.material.navigation.NavigationView
 import com.project491.weatherapp_breeze.adapter.RvAdapter
 import com.project491.weatherapp_breeze.adapter.RvAdapterUnitSwitch
@@ -71,6 +79,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var maxTemp: TextView
     private lateinit var minTemp: TextView
 
+    //
+    private lateinit var UnitSwitch: Switch
+
 
     // Declared variable for Notification
     private val CHANNEL_ID = "channel_id_01"
@@ -83,6 +94,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var navController: NavController
 
+    // Declared variable for Google's API for location services
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    private val locationPermissionCode = 1000
+
+    // Declared variable for location request
+    private lateinit var locationRequest: LocationRequest
+    private lateinit var locationCallback: LocationCallback
 
     // Define the activity creation function
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,14 +118,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         maxTemp = binding.tvMaxTemp
         minTemp = binding.tvMinTemp
 
-        // Get the status for switch button
-
-
 
         // Get navigation view
         drawerLayout = binding.drawerLayout
         navView = binding.navView
 
+
+        // Using Google API
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
+
+        setupLocationClient()
 
         //create notification
         createNotification()
@@ -122,6 +142,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             // Call the getMyData function with the entered zip code
             getCurrentDataCelsius(location)
             getForecastDataCelsius(location)
+
+            // Reset Unit Switch Button
+            UnitSwitch = findViewById(R.id.switch_for_nav_drawer)
+            drawerLayout.addDrawerListener(object : DrawerLayout.DrawerListener {
+                override fun onDrawerOpened(drawerView: View) {
+                    // Reset switch state here
+                    UnitSwitch.isChecked = false // or true, depending on what you need
+                }
+
+                override fun onDrawerSlide(drawerView: View, slideOffset: Float) {}
+                override fun onDrawerClosed(drawerView: View) {}
+                override fun onDrawerStateChanged(newState: Int) {}
+            })
+
         }
 
         // Call the getMyData function with a default zip code
@@ -166,31 +200,37 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             val switch = switchLayout.findViewById<Switch>(R.id.switch_for_nav_drawer)
             switch.setOnCheckedChangeListener{ _, isChecked ->
                 // Handle switch check/change event here
+                val location = cityTextView.text.toString()
                 if(isChecked){
-                    getCurrentDataFahrenheit(loadLocation()!!)
-                    getForecastDataFahrenheit(loadLocation()!!)
+                    getCurrentDataFahrenheit(location)
+                    getForecastDataFahrenheit(location)
                 }
                 else{
-                    getCurrentDataCelsius(loadLocation()!!)
-                    getForecastDataCelsius(loadLocation()!!)
+                    getCurrentDataCelsius(location)
+                    getForecastDataCelsius(location)
                 }
             }
         } else {
             actionView.setOnCheckedChangeListener { _, isChecked ->
                 // Handle switch check/change event here
+                val location = cityTextView.text.toString()
+                Log.i("Switch", "${location}")
                 if(isChecked){
-                    getCurrentDataFahrenheit(loadLocation()!!)
-                    getForecastDataFahrenheit(loadLocation()!!)
+                    getCurrentDataFahrenheit(location)
+                    getForecastDataFahrenheit(location)
                 }
                 else{
-                    getCurrentDataCelsius(loadLocation()!!)
-                    getForecastDataCelsius(loadLocation()!!)
+                    getCurrentDataCelsius(location)
+                    getForecastDataCelsius(location)
                 }
             }
         }
 
 
     }
+
+
+
 
     private fun getForecastDataFahrenheit(location: String) {
         GlobalScope.launch(Dispatchers.IO) {
@@ -286,6 +326,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
                     }
+                    
 
                     modifyHeader(data.name)
 
@@ -487,6 +528,78 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         TODO("Not yet implemented")
+    }
+
+    private fun setupLocationClient() {
+        locationRequest = LocationRequest.create().apply {
+            interval = 10000
+            fastestInterval = 5000
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                super.onLocationResult(locationResult)
+                for(location in locationResult.locations){
+                    // use the location data here
+                    val geocoder = Geocoder(this@MainActivity, Locale.getDefault())
+                    try{
+                        // Use geocoder to get city name
+                        val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                        if(addresses != null)
+                        {
+                            val address = addresses[0]
+                            val locationName =address.locality
+                            Log.i("location", "${locationName} ${location.latitude} ${location.longitude}")
+
+                            // save city name
+                            saveLocation(locationName)
+
+
+                        }
+                    }catch (e: Exception){
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+            // Permission is not granted, request it
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                locationPermissionCode)
+        } else {
+            // Permission has already been granted, start location updates
+            startLocationUpdates()
+        }
+    }
+
+    private fun startLocationUpdates() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return
+        }
+        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+    }
+
+    override fun onPause() {
+        super.onPause()
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
     }
 
 
