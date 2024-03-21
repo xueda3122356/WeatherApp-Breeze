@@ -64,6 +64,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.max
+import android.widget.Button
 
 
 
@@ -108,6 +109,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // Inflate the layout using view binding
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        createNotificationChannel()
+        setupNotificationButton()
+
 
 
 
@@ -228,8 +233,26 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
     }
-
-
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = getString(R.string.channel_name)
+            val descriptionText = getString(R.string.channel_description)
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+            }
+            // Register the channel with the system
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+    private fun setupNotificationButton() {
+        val notifyButton = findViewById<Button>(R.id.notifyButton)
+        notifyButton.setOnClickListener {
+            createNotification()
+        }
+    }
 
 
     private fun getForecastDataFahrenheit(location: String) {
@@ -457,23 +480,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     }
 
-
-
     private fun createNotification(){
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-        {
-            val name = "Weather Breeze"
-            val descriptionText = "Please don't forget to your umbrella"
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val notificationId = 101 // or any other unique integer
 
-            val channel = NotificationChannel(CHANNEL_ID,name,importance).apply {
-                description = descriptionText
-            }
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.notification_icon)
+            .setContentTitle("Sample Notification")
+            .setContentText("This is a sample notification")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
-            val notificationManager : NotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-
-
+        with(NotificationManagerCompat.from(this)) {
+            notify(notificationId, builder.build())
         }
     }
 

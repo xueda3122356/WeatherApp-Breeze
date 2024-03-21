@@ -5,7 +5,7 @@
     <string name="open">Open</string>
     <string name="close">Close</string>
     <string name="empty"></string>
-
+    <string name="notification">Noti</string>
 
     <string name="Location_hint">Enter zip code or location</string>
     <string name="search_button_text">Search</string>
