@@ -8,30 +8,24 @@
     tools:context=".MainActivity">
 
     <!-- Define the buttons layout -->
+
+    <!-- Define the top layout -->
     <RelativeLayout
         android:id="@+id/buttons_layout"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="369dp"
+        android:layout_height="84dp"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:orientation="horizontal"
-        android:gravity="center"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         android:background="@color/lightBlue"
-        tools:ignore="NotSibling"
-        >
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:ignore="NotSibling">
 
         <!-- Define the home button -->
-        <Button
-            android:id="@+id/home_button"
-            android:layout_width="120dp"
-            android:layout_height="60dp"
-            android:layout_marginEnd="10dp"
-            android:contextClickable="true"
-            android:text="@string/app_name2"
-            />
 
         <!-- Define the saved locations button -->
         <!--<Button
@@ -44,15 +38,38 @@
             -->
 
         <!-- Define the settings button -->
+
+        <Button
+            android:id="@+id/home_button"
+            android:layout_width="106dp"
+            android:layout_height="50dp"
+            android:layout_alignParentLeft="true"
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="10dp"
+            android:contextClickable="true"
+            android:text="@string/app_name2" />
+
         <Button
             android:id="@+id/Forecast_button"
-            android:layout_width="120dp"
-            android:layout_height="60dp"
+            android:layout_width="107dp"
+            android:layout_height="50dp"
+            android:layout_alignParentRight="true"
+            android:layout_marginStart="130dp"
             android:layout_toEndOf="@+id/home_button"
             android:text="Forecast" />
+
+        <Button
+            android:id="@+id/notificationButton"
+            android:layout_width="107dp"
+            android:layout_height="50dp"
+            android:layout_centerHorizontal="true"
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="5dp"
+            android:contextClickable="true"
+            android:text="Noti" />
+
     </RelativeLayout>
 
-    <!-- Define the top layout -->
     <LinearLayout
         android:id="@+id/top_layout"
         android:layout_width="match_parent"

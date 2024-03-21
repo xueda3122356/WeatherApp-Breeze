@@ -29,6 +29,11 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import android.widget.Button
+
+
+
+
 
 // Define the base URL for the API
 private const val bURL = "https://api.weatherapi.com/v1/"
@@ -67,6 +72,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var airPressure2: TextView
     private lateinit var airPressure3: TextView
     private lateinit var airPressure4: TextView
+    private lateinit var notificationButton: Button
     // Declared variable for switch button
     private lateinit var btnSwitch: Switch
 
@@ -74,13 +80,24 @@ class MainActivity : AppCompatActivity() {
     private val CHANNEL_ID = "channel_id_01"
     private val notificationID = 101
 
-
     // Define the activity creation function
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Inflate the layout using view binding
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        notificationButton = findViewById(R.id.notificationButton)
+
+        notificationButton.setOnClickListener {
+            sendNotification()
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        }
 
 
 
@@ -118,7 +135,7 @@ class MainActivity : AppCompatActivity() {
 
         //create notification
         createNotification()
-
+        createNotificationChannel()
         // Set a click listener on the search button
         binding.searchButton.setOnClickListener {
             // Get the zip code entered by the user
@@ -357,14 +374,27 @@ class MainActivity : AppCompatActivity() {
 
         }
     }
-
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = getString(R.string.channel_name)
+            val descriptionText = getString(R.string.channel_description)
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+            }
+            // Register the channel with the system
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
     private fun sendNotification(){
 
         val intent: Intent = Intent(this, ForecastPage::class.java).apply {
             flags =Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
 
-        val pendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, intent, 0)
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.sunny)
@@ -372,6 +402,7 @@ class MainActivity : AppCompatActivity() {
             .setContentText("Notification Example")
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
 
         with(NotificationManagerCompat.from(this)){
             if (ActivityCompat.checkSelfPermission(

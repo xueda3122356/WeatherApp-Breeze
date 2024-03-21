@@ -7,18 +7,21 @@
     tools:context=".ForecastPage">
 
     <TextView
-        android:id="@+id/etNotification"
-        android:layout_width="wrap_content"
+        android:id="@+id/notificationText"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:background="@drawable/notification_background"
+        android:contentDescription="@string/notification_description"
+        android:gravity="top"
+        android:padding="8dp"
         android:text="The weather is going down, you should wear more clothes"
-        android:textSize="24dp"
-        android:textColor="@color/cardview_light_background"
-        android:background="@color/teal_200"
+        android:textColor="@color/black"
+        android:textSize="18sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-    </TextView>
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.044"></TextView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
