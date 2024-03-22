@@ -1,7 +1,6 @@
 package com.project491.weatherapp_breeze
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -18,15 +17,11 @@ import android.view.View
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.constraintlayout.motion.widget.Debug.getLocation
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.GravityCompat
-import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
@@ -46,24 +41,17 @@ import com.project491.weatherapp_breeze.adapter.RvAdapter
 import com.project491.weatherapp_breeze.adapter.RvAdapterUnitSwitch
 import com.project491.weatherapp_breeze.data.ForecastModels.ForecastData
 import com.project491.weatherapp_breeze.databinding.ActivityMainBinding
-import com.project491.weatherapp_breeze.databinding.NavHeaderBinding
 import com.project491.weatherapp_breeze.utils.RetrofitInstance
 import com.squareup.picasso.Picasso
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import retrofit2.Call
-import retrofit2.Callback
 import retrofit2.HttpException
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.math.max
 import android.widget.Button
 
 
@@ -102,6 +90,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     // Declared variable for location request
     private lateinit var locationRequest: LocationRequest
     private lateinit var locationCallback: LocationCallback
+
+    // Declared variable for forecast arrary
+    private lateinit var celciusForecastArray: ArrayList<ForecastData>
+    private lateinit var fahrenheitForecastArray: ArrayList<ForecastData>
 
     // Define the activity creation function
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -274,11 +266,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 withContext(Dispatchers.Main) {
                     val data = response.body()!!
 
-                    var forecastArray : ArrayList<ForecastData>
+                    //var forecastArray : ArrayList<ForecastData>
 
-                    forecastArray = data.list as ArrayList<ForecastData>
+                    //forecastArray = data.list as ArrayList<ForecastData>
+                    fahrenheitForecastArray = data.list as ArrayList<ForecastData>
 
-                    val adapter = RvAdapterUnitSwitch(forecastArray)
+                    //val adapter = RvAdapterUnitSwitch(forecastArray)
+                    val adapter = RvAdapterUnitSwitch(fahrenheitForecastArray)
                     binding.rvForecast.adapter = adapter
                     binding.rvForecast.layoutManager = GridLayoutManager(
                         this@MainActivity,
@@ -385,11 +379,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 withContext(Dispatchers.Main) {
                     val data = response.body()!!
 
-                    var forecastArray : ArrayList<ForecastData>
+                    //var forecastArray : ArrayList<ForecastData>
 
-                    forecastArray = data.list as ArrayList<ForecastData>
+                    //forecastArray = data.list as ArrayList<ForecastData>
+                    celciusForecastArray = data.list as ArrayList<ForecastData>
 
-                    val adapter = RvAdapter(forecastArray)
+                    //val adapter = RvAdapter(forecastArray)
+                    val adapter = RvAdapter(celciusForecastArray)
                     binding.rvForecast.adapter = adapter
                     binding.rvForecast.layoutManager = GridLayoutManager(
                         this@MainActivity,
@@ -505,7 +501,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.sunny)
             .setContentTitle("Weather Breeze")
-            .setContentText("Notification Example")
+            //.setContentText("Notification Example")
+            .setContentText(weatherLookAhead())
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
@@ -520,6 +517,58 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             notify(notificationID,builder.build())
         }
+    }
+
+    private fun weatherLookAhead(): String {
+        val hoursAhead = 2
+
+        var temperature = emptyArray<Double>()
+        for(i in 0..hoursAhead) {
+            temperature += celciusForecastArray[i].main.feels_like
+        }
+        var tempIncrease = false
+        var tempDecrease = false
+        val tempDifference = temperature[2] - temperature[0]
+        if (tempDifference > 2) {
+            tempIncrease = true
+        } else if (tempDifference < -2) {
+            tempDecrease = true
+        }
+
+        var windSpeed = emptyArray<Double>()
+        for(i in 0..hoursAhead) {
+            windSpeed += celciusForecastArray[i].main.feels_like
+        }
+        var windIncrease = false
+        val speedDifference = windSpeed[2] - windSpeed[0]
+        if (speedDifference > 2) { windIncrease = true }
+
+        var percipitation = emptyArray<Double>()
+        for(i in 0..hoursAhead) {
+            percipitation += celciusForecastArray[i].pop
+        }
+        var precipitationChange = false
+        val precipitationDifference = percipitation[2] - percipitation[0]
+        if (precipitationDifference > 0.25) { precipitationChange = true }
+
+        var message = ""
+        message += if (tempIncrease) {
+            "Temperature increasing"
+        } else if(tempDecrease) {
+            "Temperature decreasing"
+        } else {
+            "No drastic temperature change"
+        }
+
+        if(windIncrease) {
+            message += ", wind speeds increasing"
+        }
+
+        if(precipitationChange) {
+            message += ", precipitation increasing"
+        }
+
+        return message
     }
 
     private fun saveLocation(location: String) {
