@@ -63,6 +63,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var binding: ActivityMainBinding
     // Declare variables for location
     private lateinit var cityTextView: TextView
+    //private lateinit var location: String
     // Declare variables for current weather
     private lateinit var currentTempTextView: TextView
     private lateinit var maxTemp: TextView
@@ -135,23 +136,45 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             val location = binding.locationInput.text.toString()
             binding.locationInput.setText("")
             saveLocation(location)
-
-            // Call the getMyData function with the entered zip code
-            getCurrentDataCelsius(location)
-            getForecastDataCelsius(location)
-
-            // Reset Unit Switch Button
             UnitSwitch = findViewById(R.id.switch_for_nav_drawer)
-            drawerLayout.addDrawerListener(object : DrawerLayout.DrawerListener {
-                override fun onDrawerOpened(drawerView: View) {
-                    // Reset switch state here
-                    UnitSwitch.isChecked = false // or true, depending on what you need
-                }
 
-                override fun onDrawerSlide(drawerView: View, slideOffset: Float) {}
-                override fun onDrawerClosed(drawerView: View) {}
-                override fun onDrawerStateChanged(newState: Int) {}
-            })
+            // Call weather API and check unit switch button's state
+            if(UnitSwitch.isChecked == true)
+            {
+                getCurrentDataFahrenheit(location)
+                getForecastDataFahrenheit(location)
+            }
+            else
+            {
+                getCurrentDataCelsius(location)
+                getForecastDataCelsius(location)
+            }
+
+
+            /*if(location != null) // Check if location is inputted
+            {
+                drawerLayout.addDrawerListener(object : DrawerLayout.DrawerListener {
+                    override fun onDrawerOpened(drawerView: View) {
+
+                        if(UnitSwitch.isChecked == true)
+                        {
+                            getCurrentDataFahrenheit(location)
+                            getForecastDataFahrenheit(location)
+                        }
+                        else
+                        {
+                            getCurrentDataCelsius(location)
+                            getForecastDataCelsius(location)
+                        }
+                    }
+
+                    override fun onDrawerSlide(drawerView: View, slideOffset: Float) {}
+                    override fun onDrawerClosed(drawerView: View) {}
+                    override fun onDrawerStateChanged(newState: Int) {}
+                })
+                location = "" // Clean location
+            }*/
+
 
         }
 
@@ -593,7 +616,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        TODO("Not yet implemented")
+        when(item.itemId)
+        {
+            R.id.nav_unit_switch -> {}
+        }
+        return true
     }
 
     private fun setupLocationClient() {
@@ -620,6 +647,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
                             // save city name
                             saveLocation(locationName)
+                            Log.i("location", "${locationName}")
 
 
                         }
@@ -663,10 +691,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
     }
 
-    override fun onPause() {
+    /*override fun onPause() {
         super.onPause()
         fusedLocationProviderClient.removeLocationUpdates(locationCallback)
-    }
+    }*/
 
 
 }
