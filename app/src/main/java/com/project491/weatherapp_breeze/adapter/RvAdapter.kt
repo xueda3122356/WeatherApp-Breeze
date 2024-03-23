@@ -1,5 +1,6 @@
 package com.project491.weatherapp_breeze.adapter
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -20,6 +21,7 @@ class RvAdapter(private val forecastArray: ArrayList<ForecastData>): RecyclerVie
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val currentItem = forecastArray[position]
+        Log.i("position", "${forecastArray[position]}")
         holder.rvItemBinding.apply {
             val imageIcon = currentItem.weather[0].icon
             val imageUrl = "https://api.openweathermap.org/img/w/$imageIcon.png"
@@ -29,6 +31,7 @@ class RvAdapter(private val forecastArray: ArrayList<ForecastData>): RecyclerVie
             tvItemTemp.text = "${ currentItem.main.temp.toInt()} °C"
             tvItemStatus.text = "${currentItem.weather[0].description}"
             tvItemTime.text = displayTime(currentItem.dt_txt)
+
         }
     }
 
@@ -36,11 +39,13 @@ class RvAdapter(private val forecastArray: ArrayList<ForecastData>): RecyclerVie
         val input = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
         val output = DateTimeFormatter.ofPattern("MM-dd HH:mm")
         val dateTime = LocalDateTime.parse(dtText,input)
+        Log.i("locationTime", "${dateTime}")
         return output.format(dateTime)
 
     }
 
     override fun getItemCount(): Int {
+        Log.i("size", "${forecastArray.size}")
         return forecastArray.size
     }
 }

@@ -53,7 +53,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.widget.Button
-
+import androidx.core.view.GravityCompat
 
 
 // Define the main activity class
@@ -248,6 +248,30 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
     }
+
+
+    private fun getPrefValueFromMenuId(id: Int): String? {
+        return when(id){
+            R.id.one_hour_noti -> "one_hour_noti"
+            R.id.three_hours_noti -> "three_hours_noti"
+            R.id.one_day_noti -> "one_day_noti"
+            R.id.never_noti -> "never_noti"
+            else -> "one_hour_noti"
+        }
+    }
+
+
+    private fun getMenuIdFromPref(prefValue: String?): Int {
+        return when(prefValue){
+            "three_hours_noti" -> R.id.three_hours_noti
+            "one_day_noti" -> R.id.one_day_noti
+            "never_noti" -> R.id.never_noti
+            "one_hour_noti" -> R.id.one_hour_noti
+            else -> R.id.one_hour_noti
+        }
+
+    }
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val name = getString(R.string.channel_name)
@@ -401,6 +425,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             if (response.isSuccessful && response.body() != null) {
                 withContext(Dispatchers.Main) {
                     val data = response.body()!!
+                    Log.i("time","${data.list[0].dt_txt}")
 
                     //var forecastArray : ArrayList<ForecastData>
 
@@ -446,6 +471,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
                     val iconId = data.weather[0].icon
 
+
                     val imgUrl = "https://api.openweathermap.org/img/w/$iconId.png"
 
                     Picasso.get().load(imgUrl).into(binding.imgWeather)
@@ -485,7 +511,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     modifyHeader(data.name)
 
 
-
                 }
             }
         }
@@ -501,14 +526,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun createNotification(){
         val notificationId = 101 // or any other unique integer
-
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.notification_icon)
             .setContentTitle("Sample Notification")
-            .setContentText("This is a sample notification")
+            .setContentText("This is an example")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
         with(NotificationManagerCompat.from(this)) {
+            if (ActivityCompat.checkSelfPermission(
+                    this@MainActivity,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return
+            }
             notify(notificationId, builder.build())
         }
     }
@@ -583,6 +621,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             "No drastic temperature change"
         }
 
+        if(celciusForecastArray[0].main.temp.toInt() < 10)
+        {
+            message += "Temperature is low"
+        }
+        else if(celciusForecastArray[0].main.temp.toInt() > 25)
+        {
+            message += "Temperature is high"
+        }
+
         if(windIncrease) {
             message += ", wind speeds increasing"
         }
@@ -616,12 +663,36 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        when(item.itemId)
-        {
-            R.id.nav_unit_switch -> {}
+        when (item.itemId) {
+            R.id.one_hour_noti,
+            R.id.three_hours_noti,
+            R.id.one_day_noti,
+            R.id.never_noti -> {
+                item.isChecked = true
+                saveNotificationFrequency(item.itemId)
+                return true
+            }
         }
-        return true
+
+        return false
     }
+
+    private fun saveNotificationFrequency(selectedItemId: Int) {
+        val sharedPreferences = getSharedPreferences("MyAppPreferences", Context.MODE_PRIVATE)
+        with(sharedPreferences.edit()) {
+            putString("notificationFrequency", getPrefValueFromMenuId(selectedItemId))
+            apply()
+        }
+    }
+
+    private fun loadNotificationFrequency() {
+        val sharedPreferences = getSharedPreferences("MyAppPreferences", Context.MODE_PRIVATE)
+        val notificationFrequency = sharedPreferences.getString("notificationFrequency", "never_noti")
+        val menuId = getMenuIdFromPref(notificationFrequency)
+        val navigationView: NavigationView = findViewById(R.id.nav_view)
+        navigationView.setCheckedItem(menuId)
+    }
+
 
     private fun setupLocationClient() {
         locationRequest = LocationRequest.create().apply {
@@ -695,6 +766,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onPause()
         fusedLocationProviderClient.removeLocationUpdates(locationCallback)
     }*/
+
+    override fun onResume() {
+        super.onResume()
+        loadNotificationFrequency()
+    }
 
 
 }
