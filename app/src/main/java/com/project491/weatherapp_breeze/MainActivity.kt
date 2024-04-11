@@ -54,6 +54,8 @@ import java.util.Date
 import java.util.Locale
 import android.widget.Button
 import androidx.core.view.GravityCompat
+import java.util.Timer
+import kotlin.concurrent.timerTask
 
 
 // Define the main activity class
@@ -246,7 +248,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
 
-
+        checkWeather()
     }
 
 
@@ -580,6 +582,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
+    private fun checkWeather() {
+        var message: String
+        val timer = Timer()
+        timer.scheduleAtFixedRate(timerTask {
+            message = weatherLookAhead()
+            if (!message.contains("No drastic temperature change")) {
+                sendNotification()
+            }
+        }, 3600000, 3600000)
+    }
+
     private fun weatherLookAhead(): String {
         val hoursAhead = 2
 
@@ -623,11 +636,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         if(celciusForecastArray[0].main.temp.toInt() < 10)
         {
-            message += "Temperature is low"
+            message += ", Temperature is low"
         }
         else if(celciusForecastArray[0].main.temp.toInt() > 25)
         {
-            message += "Temperature is high"
+            message += ", Temperature is high"
         }
 
         if(windIncrease) {
