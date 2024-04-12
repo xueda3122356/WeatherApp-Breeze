@@ -153,30 +153,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
 
 
-            /*if(location != null) // Check if location is inputted
-            {
-                drawerLayout.addDrawerListener(object : DrawerLayout.DrawerListener {
-                    override fun onDrawerOpened(drawerView: View) {
-
-                        if(UnitSwitch.isChecked == true)
-                        {
-                            getCurrentDataFahrenheit(location)
-                            getForecastDataFahrenheit(location)
-                        }
-                        else
-                        {
-                            getCurrentDataCelsius(location)
-                            getForecastDataCelsius(location)
-                        }
-                    }
-
-                    override fun onDrawerSlide(drawerView: View, slideOffset: Float) {}
-                    override fun onDrawerClosed(drawerView: View) {}
-                    override fun onDrawerStateChanged(newState: Int) {}
-                })
-                location = "" // Clean location
-            }*/
-
 
         }
 
@@ -248,7 +224,24 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
 
-        checkWeather()
+        if(loadNotificationFrequency()!! == "one_hour_noti")
+        {
+            checkWeatherBaseOnFrequency(3600000,3600000)
+        }
+        else if(loadNotificationFrequency()!! == "three_hours_noti")
+        {
+            checkWeatherBaseOnFrequency(10800000,10800000)
+        }
+        else if(loadNotificationFrequency()!! == "one_day_noti")
+        {
+            checkWeatherBaseOnFrequency(86400000,86400000)
+        }
+        else if(loadNotificationFrequency()!! == "never_noti")
+        {
+            Log.i("Frequency", "never")
+        }
+
+
     }
 
 
@@ -593,6 +586,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }, 3600000, 3600000)
     }
 
+    private fun checkWeatherBaseOnFrequency(delay: Long, period: Long){
+        var message: String
+        val timer = Timer()
+        timer.scheduleAtFixedRate(timerTask {
+            message = weatherLookAhead()
+            if (!message.contains("No drastic temperature change")) {
+                sendNotification()
+            }
+        }, delay, period)
+        Log.i("delay", "${delay}")
+    }
+
     private fun weatherLookAhead(): String {
         val hoursAhead = 2
 
@@ -683,6 +688,22 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.never_noti -> {
                 item.isChecked = true
                 saveNotificationFrequency(item.itemId)
+                if(item.itemId == R.id.one_hour_noti)
+                {
+                    checkWeatherBaseOnFrequency(3600000,3600000)
+                }
+                else if(item.itemId == R.id.three_hours_noti)
+                {
+                    checkWeatherBaseOnFrequency(10800000,10800000)
+                }
+                else if(item.itemId == R.id.one_day_noti)
+                {
+                    checkWeatherBaseOnFrequency(86400000,86400000)
+                }
+                else if(item.itemId == R.id.never_noti)
+                {
+                    Log.i("frequency", "never")
+                }
                 return true
             }
         }
@@ -698,12 +719,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
-    private fun loadNotificationFrequency() {
+    private fun loadNotificationFrequency(): String? {
         val sharedPreferences = getSharedPreferences("MyAppPreferences", Context.MODE_PRIVATE)
         val notificationFrequency = sharedPreferences.getString("notificationFrequency", "never_noti")
         val menuId = getMenuIdFromPref(notificationFrequency)
         val navigationView: NavigationView = findViewById(R.id.nav_view)
         navigationView.setCheckedItem(menuId)
+        return notificationFrequency
     }
 
 
