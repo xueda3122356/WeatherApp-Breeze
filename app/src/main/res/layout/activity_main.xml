@@ -20,6 +20,7 @@
         android:layout_height="match_parent"
         android:background="@drawable/background_gradient">
 
+
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
@@ -405,12 +406,13 @@
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent"
                             app:layout_constraintVertical_bias="0.0"
-                            app:srcCompat="@drawable/rain" />
+                            app:srcCompat="@drawable/gifrain" />
 
                         <TextView
                             android:id="@+id/tvMaxTemp"
                             android:layout_width="202dp"
                             android:layout_height="38dp"
+                            android:layout_marginStart="8dp"
                             android:text="Max"
                             android:textSize="20sp"
                             app:layout_constraintBottom_toBottomOf="parent"
@@ -437,7 +439,7 @@
                             android:id="@+id/tvFeelsLike"
                             android:layout_width="200dp"
                             android:layout_height="33dp"
-                            android:layout_marginStart="17dp"
+                            android:layout_marginStart="25dp"
                             android:layout_marginTop="104dp"
                             android:layout_marginEnd="332dp"
                             android:layout_marginBottom="51dp"
@@ -551,7 +553,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="city name"
                                 android:textColor="@color/black"
-                                android:textSize="60sp"
+                                android:textSize="45sp"
                                 android:textStyle="bold"
                                 app:layout_constraintBottom_toTopOf="@+id/tvUpdateTime"
                                 app:layout_constraintEnd_toEndOf="parent"
@@ -566,7 +568,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="100dp"
                                 android:text="Update At"
-                                android:textAlignment="viewEnd"
+                                android:textAlignment="center"
                                 android:textSize="16dp"
                                 android:textStyle="bold"
                                 app:layout_constraintBottom_toBottomOf="parent"
