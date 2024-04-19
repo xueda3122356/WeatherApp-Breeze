@@ -1,7 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <gradient
-        android:startColor="#2196F3"
-    android:endColor="#9C27B0"
-    android:angle="45" />
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <bitmap
+            android:src="@drawable/lakecloud"
+        android:tileMode="disabled"
+        android:gravity="center" />
+    </item>
+    <item>
+        <shape>
+            <gradient
+                android:startColor="#64B5F6A0"
+            android:centerColor="#9575CDA0"
+            android:endColor="#81C784A0"
+            android:angle="45" />
+        </shape>
+    </item>
+</layer-list>
