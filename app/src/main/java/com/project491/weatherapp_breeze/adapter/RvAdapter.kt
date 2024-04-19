@@ -7,8 +7,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.project491.weatherapp_breeze.data.ForecastModels.ForecastData
 import com.project491.weatherapp_breeze.databinding.RvItemLayoutBinding
 import com.squareup.picasso.Picasso
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Date
+import java.util.Locale
 
 class RvAdapter(private val forecastArray: ArrayList<ForecastData>): RecyclerView.Adapter<RvAdapter.ViewHolder>() {
     class ViewHolder(val rvItemBinding: RvItemLayoutBinding): RecyclerView.ViewHolder(rvItemBinding.root) {
@@ -30,19 +33,29 @@ class RvAdapter(private val forecastArray: ArrayList<ForecastData>): RecyclerVie
 
             tvItemTemp.text = "${ currentItem.main.temp.toInt()} °C"
             tvItemStatus.text = "${currentItem.weather[0].description}"
-            tvItemTime.text = displayTime(currentItem.dt_txt)
-
+            //tvItemTime.text = displayTime(currentItem.dt_txt)
+            tvItemTime.text = dateFormatConverter(
+                currentItem.dt.toLong()
+            )
         }
     }
 
-    private fun displayTime(dtText: String): CharSequence? {
+    private fun dateFormatConverter(date: Long): String {
+        return SimpleDateFormat(
+            "hh:mm a",
+            Locale.ENGLISH
+        ).format(Date(date * 1000))
+
+    }
+
+    /*private fun displayTime(dtText: String): CharSequence? {
         val input = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
         val output = DateTimeFormatter.ofPattern("MM-dd HH:mm")
         val dateTime = LocalDateTime.parse(dtText,input)
         Log.i("locationTime", "${dateTime}")
         return output.format(dateTime)
 
-    }
+    }*/
 
     override fun getItemCount(): Int {
         Log.i("size", "${forecastArray.size}")

@@ -7,6 +7,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.drawable.Drawable
 import android.location.Geocoder
 import android.os.Build
 import android.os.Bundle
@@ -54,6 +57,11 @@ import java.util.Date
 import java.util.Locale
 import android.widget.Button
 import androidx.core.view.GravityCompat
+import com.squareup.picasso.Target
+import com.squareup.picasso.Transformation
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.Calendar
 import java.util.Timer
 import kotlin.concurrent.timerTask
 
@@ -105,8 +113,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        createNotificationChannel()
-        setupNotificationButton()
+        //createNotificationChannel()
+        //setupNotificationButton()
 
 
 
@@ -130,7 +138,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         setupLocationClient()
 
         //create notification
-        createNotification()
+        //createNotification()
 
         // Set a click listener on the search button
         binding.searchButton.setOnClickListener {
@@ -169,7 +177,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         // set a click listener on the Forecast button
         binding.ForecastButton.setOnClickListener(){
-            sendNotification()
+            val intent = Intent(this, ForecastPage::class.java)
+            startActivity(intent)
         }
 
         // setup toolbar and navigation drawer
@@ -224,6 +233,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
 
+        // check the frequency of pushing notification
         if(loadNotificationFrequency()!! == "one_hour_noti")
         {
             checkWeatherBaseOnFrequency(3600000,3600000)
@@ -241,6 +251,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             Log.i("Frequency", "never")
         }
 
+        val date = Date()
+        val cal = Calendar.getInstance()
+        Log.i("calender", "${cal.get(Calendar.HOUR_OF_DAY)}")
 
     }
 
@@ -267,7 +280,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     }
 
-    private fun createNotificationChannel() {
+    /*private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val name = getString(R.string.channel_name)
             val descriptionText = getString(R.string.channel_description)
@@ -280,13 +293,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
-    }
-    private fun setupNotificationButton() {
+    }*/
+
+    /*private fun setupNotificationButton() {
         val notifyButton = findViewById<Button>(R.id.notifyButton)
         notifyButton.setOnClickListener {
             createNotification()
         }
-    }
+    }*/
 
 
     private fun getForecastDataFahrenheit(location: String) {
@@ -435,7 +449,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         1,
                         RecyclerView.HORIZONTAL,
                         false)
-
                 }
             }
         }
@@ -500,11 +513,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                             )
                         }"
 
-
                     }
 
                     modifyHeader(data.name)
-
 
                 }
             }
@@ -519,7 +530,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     }
 
-    private fun createNotification(){
+   /* private fun createNotification(){
         val notificationId = 101 // or any other unique integer
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.notification_icon)
@@ -544,6 +555,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             notify(notificationId, builder.build())
         }
+    }*/
+
+    fun loadBitmapWithPicasso(context: Context, imageUrl: String, callback: (Bitmap?) -> Unit) {
+        val picassoTarget = object : Target {
+            override fun onBitmapLoaded(bitmap: Bitmap?, from: Picasso.LoadedFrom?) {
+                // Invoke callback with the loaded bitmap
+                callback(bitmap)
+            }
+
+            override fun onBitmapFailed(e: Exception?, errorDrawable: Drawable?) {
+                // Handle error and invoke callback with null
+                callback(null)
+            }
+
+            override fun onPrepareLoad(placeHolderDrawable: Drawable?) {
+                // Here you can place any preparations if needed
+            }
+        }
+
+        // Load the image with Picasso into the custom Target
+        Picasso.get().load(imageUrl).into(picassoTarget)
     }
 
     private fun sendNotification(){
@@ -554,11 +586,28 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         val pendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, intent, 0)
 
+        val imageIcon = celciusForecastArray[0].weather[0].icon
+        val imageUrl = "https://api.openweathermap.org/img/w/$imageIcon.png"
+
+        // Create a URL object
+        val url = URL(imageUrl)
+        // Open a connection
+        val connection = url.openConnection() as HttpURLConnection
+        connection.doInput = true
+        connection.connect()
+        // Get the InputStream
+        val inputStream = connection.inputStream
+        // Convert the InputStream into a Bitmap
+        val bitmapLargeIcon = BitmapFactory.decodeStream(inputStream)
+        // Close the InputStream
+        inputStream.close()
+
+
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.sunny)
+            .setSmallIcon(R.drawable.noti_breege_icon)
             .setContentTitle("Weather Breeze")
-            //.setContentText("Notification Example")
             .setContentText(weatherLookAhead())
+            .setLargeIcon(bitmapLargeIcon)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
@@ -573,34 +622,28 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             notify(notificationID,builder.build())
         }
+
+
     }
 
-    private fun checkWeather() {
-        var message: String
-        val timer = Timer()
-        timer.scheduleAtFixedRate(timerTask {
-            message = weatherLookAhead()
-            if (!message.contains("No drastic temperature change")) {
-                sendNotification()
-            }
-        }, 3600000, 3600000)
-    }
 
     private fun checkWeatherBaseOnFrequency(delay: Long, period: Long){
         var message: String
         val timer = Timer()
         timer.scheduleAtFixedRate(timerTask {
             message = weatherLookAhead()
-            if (!message.contains("No drastic temperature change")) {
+            /*if (!message.contains("No drastic temperature change")) {
                 sendNotification()
-            }
+            }*/
+            sendNotification()
         }, delay, period)
         Log.i("delay", "${delay}")
     }
 
     private fun weatherLookAhead(): String {
-        val hoursAhead = 2
+        val hoursAhead = 5
 
+        // Check temperature
         var temperature = emptyArray<Double>()
         for(i in 0..hoursAhead) {
             temperature += celciusForecastArray[i].main.feels_like
@@ -614,6 +657,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             tempDecrease = true
         }
 
+
+        // Check wind speed
         var windSpeed = emptyArray<Double>()
         for(i in 0..hoursAhead) {
             windSpeed += celciusForecastArray[i].main.feels_like
@@ -622,14 +667,26 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val speedDifference = windSpeed[2] - windSpeed[0]
         if (speedDifference > 2) { windIncrease = true }
 
-        var percipitation = emptyArray<Double>()
+
+        // Check rain posibility
+        var precipitation = emptyArray<Double>()
         for(i in 0..hoursAhead) {
-            percipitation += celciusForecastArray[i].pop
+            precipitation += celciusForecastArray[i].pop
+            Log.i("rainPop", "${i} = ${celciusForecastArray[i].pop}  ${dateFormatConverter(celciusForecastArray[i].dt.toLong())}")
+        }
+
+        for(i in 0..hoursAhead) {
+            if(celciusForecastArray[i].pop >= 0.7)
+            {
+
+            }
         }
         var precipitationChange = false
-        val precipitationDifference = percipitation[2] - percipitation[0]
+        val precipitationDifference = precipitation[2] - precipitation[0]
         if (precipitationDifference > 0.25) { precipitationChange = true }
 
+
+        // Modify message
         var message = ""
         message += if (tempIncrease) {
             "Temperature increasing"
@@ -690,7 +747,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 saveNotificationFrequency(item.itemId)
                 if(item.itemId == R.id.one_hour_noti)
                 {
-                    checkWeatherBaseOnFrequency(3600000,3600000)
+                    checkWeatherBaseOnFrequency(10000,10000)
                 }
                 else if(item.itemId == R.id.three_hours_noti)
                 {
