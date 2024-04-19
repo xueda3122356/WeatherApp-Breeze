@@ -128,7 +128,7 @@
                                     <ImageView
                                         android:id="@+id/imgSunrise"
                                         android:layout_width="30dp"
-                                        android:layout_height="30dp"
+                                        android:layout_height="23dp"
                                         android:layout_gravity="center"
                                         android:src="@drawable/sunrise" />
 
@@ -551,7 +551,7 @@
                                 android:id="@+id/headerLocationNameCity"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="city name"
+                                android:text="City Name"
                                 android:textColor="@color/black"
                                 android:textSize="45sp"
                                 android:textStyle="bold"
