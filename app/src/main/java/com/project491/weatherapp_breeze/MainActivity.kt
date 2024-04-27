@@ -57,6 +57,7 @@ import java.util.Date
 import java.util.Locale
 import android.widget.Button
 import androidx.core.view.GravityCompat
+import com.project491.weatherapp_breeze.databinding.ActivityForecastPageBinding
 import com.squareup.picasso.Target
 import com.squareup.picasso.Transformation
 import java.net.HttpURLConnection
@@ -64,6 +65,7 @@ import java.net.URL
 import java.util.Calendar
 import java.util.Timer
 import kotlin.concurrent.timerTask
+import kotlin.math.abs
 
 
 // Define the main activity class
@@ -71,13 +73,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     // Declare variable for view binding
     private lateinit var binding: ActivityMainBinding
+
     // Declare variables for location
     private lateinit var cityTextView: TextView
-    //private lateinit var location: String
+
     // Declare variables for current weather
     private lateinit var currentTempTextView: TextView
     private lateinit var maxTemp: TextView
     private lateinit var minTemp: TextView
+    var currentTemperature = 0
 
     //
     private lateinit var UnitSwitch: Switch
@@ -105,6 +109,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     // Declared variable for forecast arrary
     private lateinit var celciusForecastArray: ArrayList<ForecastData>
     private lateinit var fahrenheitForecastArray: ArrayList<ForecastData>
+
+    // Declared variable for forecast page
+    var tempDecrease = false
+    var tempIncrease = true
+    var tempDifferent = 0
+    var messageForecast = ""
+    var highPercentage = false
 
     // Define the activity creation function
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -169,6 +180,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         getCurrentDataCelsius(loadLocation()!!)
         getForecastDataCelsius(loadLocation()!!)
 
+
         // Get the city text views
         cityTextView = binding.headerLocationNameCity
 
@@ -176,10 +188,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         //binding.headerLocationName.setHorizontallyScrolling(true)
 
         // set a click listener on the Forecast button
-        binding.ForecastButton.setOnClickListener(){
+        /*binding.ForecastButton.setOnClickListener(){
             val intent = Intent(this, ForecastPage::class.java)
+            calTempDifferent()
+            weatherLookAhead()
+            intent.putExtra("tempIncrease", tempIncrease)
+            intent.putExtra("tempDecrease", tempDecrease)
+            intent.putExtra("tempDifferent", tempDifferent)
+            intent.putExtra("message", messageForecast)
             startActivity(intent)
-        }
+            messageForecast = ""
+        }*/
 
         // setup toolbar and navigation drawer
         binding.apply {
@@ -257,6 +276,26 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     }
 
+    private fun calTempDifferent() {
+        val hoursAhead = 2
+
+        // Check temperature
+        var temperature = emptyArray<Int>()
+        for(i in 0..hoursAhead) {
+            temperature += celciusForecastArray[i].main.temp.toInt()
+
+        }
+
+        for(i in 0 .. hoursAhead-1)
+        {
+            tempDifferent += temperature[i] - temperature[i+1]
+            tempIncrease = tempDifferent < 0
+            tempDecrease = tempDifferent > 0
+        }
+        Log.i("tempdifferent", "${tempDifferent}")
+
+    }
+
 
     private fun getPrefValueFromMenuId(id: Int): String? {
         return when(id){
@@ -302,6 +341,62 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }*/
 
+    // Define a function to retrieve weather data from the API
+
+    private fun refreshCurrentDataCelsius(location: String){
+        GlobalScope.launch(Dispatchers.IO) {
+            val response = try {
+                RetrofitInstance.apiCurrent.getCurrent(
+                    location, "metric", applicationContext.getString(R.string.api_key)
+                )
+            } catch (e: IOException) {
+                Toast.makeText(applicationContext, "app error: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            } catch (e: HttpException) {
+                Toast.makeText(applicationContext, "http error: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            }
+            if (response.isSuccessful && response.body() != null) {
+                withContext(Dispatchers.Main) {
+                    val data = response.body()!!
+                    currentTemperature = data.main.temp.toInt()
+                }
+
+            }
+        }
+    }
+
+    private fun refreshForecastDataCelsius(location: String){
+        GlobalScope.launch(Dispatchers.IO) {
+            val response = try {
+                RetrofitInstance.apiForecast.getForecast(
+                    location,"metric", applicationContext.getString(R.string.api_key)
+                )
+            } catch (e: IOException) {
+                Toast.makeText(applicationContext, "app error: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            } catch (e: HttpException) {
+                Toast.makeText(applicationContext, "http error: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            }
+            if (response.isSuccessful && response.body() != null) {
+                withContext(Dispatchers.Main) {
+                    val data = response.body()!!
+                    Log.i("time","${data.list[0].dt_txt}")
+
+                    //var forecastArray : ArrayList<ForecastData>
+
+                    //forecastArray = data.list as ArrayList<ForecastData>
+                    celciusForecastArray = data.list as ArrayList<ForecastData>
+
+                }
+            }
+        }
+    }
 
     private fun getForecastDataFahrenheit(location: String) {
         GlobalScope.launch(Dispatchers.IO) {
@@ -335,6 +430,111 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         1,
                         RecyclerView.HORIZONTAL,
                         false)
+
+                }
+            }
+        }
+    }
+
+    private fun getForecastDataCelsius(location: String) {
+        GlobalScope.launch(Dispatchers.IO) {
+            val response = try {
+                RetrofitInstance.apiForecast.getForecast(
+                    location,"metric", applicationContext.getString(R.string.api_key)
+                )
+            } catch (e: IOException) {
+                Toast.makeText(applicationContext, "app error: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            } catch (e: HttpException) {
+                Toast.makeText(applicationContext, "http error: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            }
+            if (response.isSuccessful && response.body() != null) {
+                withContext(Dispatchers.Main) {
+                    val data = response.body()!!
+                    Log.i("time","${data.list[0].dt_txt}")
+
+                    //var forecastArray : ArrayList<ForecastData>
+
+                    //forecastArray = data.list as ArrayList<ForecastData>
+                    celciusForecastArray = data.list as ArrayList<ForecastData>
+
+                    //val adapter = RvAdapter(forecastArray)
+                    val adapter = RvAdapter(celciusForecastArray)
+                    binding.rvForecast.adapter = adapter
+                    binding.rvForecast.layoutManager = GridLayoutManager(
+                        this@MainActivity,
+                        1,
+                        RecyclerView.HORIZONTAL,
+                        false)
+                }
+            }
+        }
+    }
+
+    private fun getCurrentDataCelsius(location: String) {
+        GlobalScope.launch(Dispatchers.IO) {
+            val response = try {
+                RetrofitInstance.apiCurrent.getCurrent(
+                    location, "metric", applicationContext.getString(R.string.api_key)
+                )
+            } catch (e: IOException) {
+                Toast.makeText(applicationContext, "app error: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            } catch (e: HttpException) {
+                Toast.makeText(applicationContext, "http error: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
+            }
+            if (response.isSuccessful && response.body() != null) {
+                withContext(Dispatchers.Main) {
+                    val data = response.body()!!
+
+                    currentTempTextView.text = "${data.main.temp.toInt()} °C"
+                    currentTemperature = data.main.temp.toInt()
+
+                    val iconId = data.weather[0].icon
+
+
+                    val imgUrl = "https://api.openweathermap.org/img/w/$iconId.png"
+
+                    Picasso.get().load(imgUrl).into(binding.imgWeather)
+
+                    maxTemp.text = "Max temp: ${data.main.temp_max.toInt()} °C"
+                    minTemp.text = "Min temp: ${data.main.temp_min.toInt()} °C"
+
+                    binding.tvSunrise.text =
+                        dateFormatConverter(
+                            data.sys.sunrise.toLong()
+                        )
+
+                    binding.tvSunset.text =
+                        dateFormatConverter(
+                            data.sys.sunset.toLong()
+                        )
+
+                    binding.apply {
+                        tvStatus.text = data.weather[0].description
+                        tvWind.text = "${data.wind.speed.toString()} KM/H"
+                        cityTextView.text = "${data.name}"
+                        tvTemp.text = "${data.main.temp.toInt()} °C"
+                        tvFeelsLike.text = "Feels like: ${data.main.feels_like.toInt()} °C"
+                        tvMinTemp.text = "Min temp: ${data.main.temp_min.toInt()} °C"
+                        tvMaxTemp.text = "Max temp: ${data.main.temp_max.toInt()} °C"
+                        tvHumidity.text = "${data.main.humidity}"
+                        tvPressure.text = "${data.main.pressure}"
+                        tvUpdateTime.text = "Last Update: ${
+                            dateFormatConverter(
+                                data.dt.toLong()
+                            )
+                        }"
+
+                    }
+
+                    modifyHeader(data.name)
 
                 }
             }
@@ -416,111 +616,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         return navController.navigateUp(appBarConfiguration)|| super.onSupportNavigateUp()
     }
 
-    private fun getForecastDataCelsius(location: String) {
-        GlobalScope.launch(Dispatchers.IO) {
-            val response = try {
-                RetrofitInstance.apiForecast.getForecast(
-                    location,"metric", applicationContext.getString(R.string.api_key)
-                )
-            } catch (e: IOException) {
-                Toast.makeText(applicationContext, "app error: ${e.message}", Toast.LENGTH_SHORT)
-                    .show()
-                return@launch
-            } catch (e: HttpException) {
-                Toast.makeText(applicationContext, "http error: ${e.message}", Toast.LENGTH_SHORT)
-                    .show()
-                return@launch
-            }
-            if (response.isSuccessful && response.body() != null) {
-                withContext(Dispatchers.Main) {
-                    val data = response.body()!!
-                    Log.i("time","${data.list[0].dt_txt}")
-
-                    //var forecastArray : ArrayList<ForecastData>
-
-                    //forecastArray = data.list as ArrayList<ForecastData>
-                    celciusForecastArray = data.list as ArrayList<ForecastData>
-
-                    //val adapter = RvAdapter(forecastArray)
-                    val adapter = RvAdapter(celciusForecastArray)
-                    binding.rvForecast.adapter = adapter
-                    binding.rvForecast.layoutManager = GridLayoutManager(
-                        this@MainActivity,
-                        1,
-                        RecyclerView.HORIZONTAL,
-                        false)
-                }
-            }
-        }
-    }
-
-
-    // Define a function to retrieve weather data from the API
-    private fun getCurrentDataCelsius(location: String) {
-        GlobalScope.launch(Dispatchers.IO) {
-            val response = try {
-                RetrofitInstance.apiCurrent.getCurrent(
-                    location, "metric", applicationContext.getString(R.string.api_key)
-                )
-            } catch (e: IOException) {
-                Toast.makeText(applicationContext, "app error: ${e.message}", Toast.LENGTH_SHORT)
-                    .show()
-                return@launch
-            } catch (e: HttpException) {
-                Toast.makeText(applicationContext, "http error: ${e.message}", Toast.LENGTH_SHORT)
-                    .show()
-                return@launch
-            }
-            if (response.isSuccessful && response.body() != null) {
-                withContext(Dispatchers.Main) {
-                    val data = response.body()!!
-
-                    currentTempTextView.text = "${data.main.temp.toInt()} °C"
-
-                    val iconId = data.weather[0].icon
-
-
-                    val imgUrl = "https://api.openweathermap.org/img/w/$iconId.png"
-
-                    Picasso.get().load(imgUrl).into(binding.imgWeather)
-
-                    maxTemp.text = "Max temp: ${data.main.temp_max.toInt()} °C"
-                    minTemp.text = "Min temp: ${data.main.temp_min.toInt()} °C"
-
-                    binding.tvSunrise.text =
-                        dateFormatConverter(
-                            data.sys.sunrise.toLong()
-                        )
-
-                    binding.tvSunset.text =
-                        dateFormatConverter(
-                            data.sys.sunset.toLong()
-                        )
-
-                    binding.apply {
-                        tvStatus.text = data.weather[0].description
-                        tvWind.text = "${data.wind.speed.toString()} KM/H"
-                        cityTextView.text = "${data.name}"
-                        tvTemp.text = "${data.main.temp.toInt()} °C"
-                        tvFeelsLike.text = "Feels like: ${data.main.feels_like.toInt()} °C"
-                        tvMinTemp.text = "Min temp: ${data.main.temp_min.toInt()} °C"
-                        tvMaxTemp.text = "Max temp: ${data.main.temp_max.toInt()} °C"
-                        tvHumidity.text = "${data.main.humidity}"
-                        tvPressure.text = "${data.main.pressure}"
-                        tvUpdateTime.text = "Last Update: ${
-                            dateFormatConverter(
-                                data.dt.toLong()
-                            )
-                        }"
-
-                    }
-
-                    modifyHeader(data.name)
-
-                }
-            }
-        }
-    }
 
     private fun dateFormatConverter(date: Long): String {
         return SimpleDateFormat(
@@ -557,34 +652,28 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }*/
 
-    fun loadBitmapWithPicasso(context: Context, imageUrl: String, callback: (Bitmap?) -> Unit) {
-        val picassoTarget = object : Target {
-            override fun onBitmapLoaded(bitmap: Bitmap?, from: Picasso.LoadedFrom?) {
-                // Invoke callback with the loaded bitmap
-                callback(bitmap)
-            }
-
-            override fun onBitmapFailed(e: Exception?, errorDrawable: Drawable?) {
-                // Handle error and invoke callback with null
-                callback(null)
-            }
-
-            override fun onPrepareLoad(placeHolderDrawable: Drawable?) {
-                // Here you can place any preparations if needed
-            }
-        }
-
-        // Load the image with Picasso into the custom Target
-        Picasso.get().load(imageUrl).into(picassoTarget)
-    }
 
     private fun sendNotification(){
 
-        val intent: Intent = Intent(this, ForecastPage::class.java).apply {
-            flags =Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
+        var message = weatherLookAhead()
 
-        val pendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, intent, 0)
+        val intent: Intent = Intent(this, ForecastPage::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+            intent.putExtra("tempIncrease", tempIncrease)
+            Log.i("tempIncrease", "${tempIncrease}")
+            intent.putExtra("tempDecrease", tempDecrease)
+            Log.i("tempDecrease", "${tempDecrease}")
+            intent.putExtra("tempDifferent", tempDifferent)
+            Log.i("tempDifferent", "$tempDifferent")
+            intent.putExtra("message", messageForecast)
+            Log.i("messageForecast", "$messageForecast")
+            tempIncrease = false
+            tempDecrease = false
+            tempDifferent = 0
+
+
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
 
         val imageIcon = celciusForecastArray[0].weather[0].icon
         val imageUrl = "https://api.openweathermap.org/img/w/$imageIcon.png"
@@ -606,7 +695,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.noti_breege_icon)
             .setContentTitle("Weather Breeze")
-            .setContentText(weatherLookAhead())
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setLargeIcon(bitmapLargeIcon)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -617,7 +707,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     Manifest.permission.POST_NOTIFICATIONS
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-
                 return
             }
             notify(notificationID,builder.build())
@@ -628,91 +717,144 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
     private fun checkWeatherBaseOnFrequency(delay: Long, period: Long){
-        var message: String
         val timer = Timer()
+
         timer.scheduleAtFixedRate(timerTask {
-            message = weatherLookAhead()
-            /*if (!message.contains("No drastic temperature change")) {
-                sendNotification()
-            }*/
             sendNotification()
-        }, delay, period)
-        Log.i("delay", "${delay}")
+            }, delay, period)
+            Log.i("delay", "${delay}")
+
+
     }
 
     private fun weatherLookAhead(): String {
-        val hoursAhead = 5
 
-        // Check temperature
+        var message = ""
+        messageForecast = ""
+
+        refreshCurrentDataCelsius(loadLocation()!!)
+        refreshForecastDataCelsius(loadLocation()!!)
+
+        calTempDifferent()
+
+        message += "${loadLocation()!!}: "
+        message += "Temp: ${celciusForecastArray[0].main.temp.toInt()} °C "
+        message += "Rain: ${(celciusForecastArray[0].pop * 100).toInt()} % "
+        message += "Wind: ${celciusForecastArray[0].wind.speed} Km/H \n"
+        message += "${celciusForecastArray[0].weather[0].description} \n\n"
+
+        var hoursAhead = 2 // check in three hours
+
+        var rainPercentage = emptyArray<Double>()
+        for(i in 0 .. hoursAhead)
+        {
+            rainPercentage += celciusForecastArray[i].pop
+        }
+
         var temperature = emptyArray<Double>()
-        for(i in 0..hoursAhead) {
-            temperature += celciusForecastArray[i].main.feels_like
-        }
-        var tempIncrease = false
-        var tempDecrease = false
-        val tempDifference = temperature[2] - temperature[0]
-        if (tempDifference > 2) {
-            tempIncrease = true
-        } else if (tempDifference < -2) {
-            tempDecrease = true
+        for(i in 0 .. hoursAhead)
+        {
+            temperature += celciusForecastArray[i].main.temp
         }
 
-
-        // Check wind speed
         var windSpeed = emptyArray<Double>()
-        for(i in 0..hoursAhead) {
-            windSpeed += celciusForecastArray[i].main.feels_like
-        }
-        var windIncrease = false
-        val speedDifference = windSpeed[2] - windSpeed[0]
-        if (speedDifference > 2) { windIncrease = true }
-
-
-        // Check rain posibility
-        var precipitation = emptyArray<Double>()
-        for(i in 0..hoursAhead) {
-            precipitation += celciusForecastArray[i].pop
-            Log.i("rainPop", "${i} = ${celciusForecastArray[i].pop}  ${dateFormatConverter(celciusForecastArray[i].dt.toLong())}")
+        for(i in 0 .. hoursAhead)
+        {
+            windSpeed += celciusForecastArray[i].wind.speed
         }
 
-        for(i in 0..hoursAhead) {
-            if(celciusForecastArray[i].pop >= 0.7)
+        var description = emptyArray<String>()
+        for(i in 0 .. hoursAhead)
+        {
+            description += celciusForecastArray[i].weather[0].description
+        }
+
+        // check situation and add suggestion in message
+
+        for(i in 0 .. hoursAhead)
+        {
+            if(rainPercentage[i] >= 0.7)
             {
+                highPercentage = true
+                if(description[i] == "heavy intensity rain" || description[i] == "very heavy rain"
+                    || description[i] == "extreme rain" || description[i] == "heavy intensity shower rain")
+                {
+                    messageForecast += "Heavy rain is expected in the next three hours. " +
+                            "Please reduce going out, and if you need to go out," +
+                            " please remember to bring an umbrella."
+                    break
+                }
+                else if(description[i] == "light rain" || description[i] == "moderate rain"
+                    || description[i] == "light intensity shower rain" || description[i] == "shower rain"
+                    || description[i] == "ragged shower rain")
+                {
+                    messageForecast += "Light to moderate rain is expected in the next 3 hours. " +
+                            "Please don't forget to bring an umbrella when you go out."
+                    break
+                }
+                else if(description[i] == "freezing rain")
+                {
+                    messageForecast += "Freezing rain is expected in the next three hours." +
+                            " If you need to go out, please remember to bring an umbrella" +
+                            " and pay attention to slippery roads."
+                    break
+                }
+            }
+            else{
 
             }
         }
-        var precipitationChange = false
-        val precipitationDifference = precipitation[2] - precipitation[0]
-        if (precipitationDifference > 0.25) { precipitationChange = true }
 
 
-        // Modify message
-        var message = ""
-        message += if (tempIncrease) {
-            "Temperature increasing"
-        } else if(tempDecrease) {
-            "Temperature decreasing"
-        } else {
-            "No drastic temperature change"
-        }
-
-        if(celciusForecastArray[0].main.temp.toInt() < 10)
+        if(tempIncrease)
         {
-            message += ", Temperature is low"
+
+            if(abs(tempDifferent) >= 5 && currentTemperature >= 20){
+                messageForecast += "As temperatures rise significantly, " +
+                        "remember to bring a short-sleeve shirt " +
+                        "and apply sunscreen if you go out."
+            }
+            else if(abs(tempDifferent) >= 3 && currentTemperature >= 20){
+                messageForecast += "The temperature is rising slightly; please adjust your clothing accordingly."
+            }
+            else if(currentTemperature >= 20){
+                messageForecast += "The weather is hot, please remember to stay hydrated."
+            }
+
         }
-        else if(celciusForecastArray[0].main.temp.toInt() > 25)
+
+        if(tempDecrease)
         {
-            message += ", Temperature is high"
+            if(tempDifferent >= 5 && currentTemperature <= 15){
+                messageForecast += "The temperature is noticeably dropping; remember to bring warm clothes if you go out."
+            }
+            else if(tempDifferent >= 3 && currentTemperature <= 15){
+                messageForecast += "The temperature is slightly dropping; please ensure to keep warm appropriately."
+            }
+            else if(currentTemperature <= 15){
+                messageForecast += "The weather is getting cooler, please remember to keep warm"
+            }
         }
 
-        if(windIncrease) {
-            message += ", wind speeds increasing"
+        if(!tempIncrease && !tempDecrease)
+        {
+            if(currentTemperature >= 20)
+            {
+                messageForecast += "The weather is hot, please remember to stay hydrated."
+            }
+            else if(currentTemperature <= 15)
+            {
+                messageForecast += "The weather is getting cooler, please remember to keep warm"
+            }
+            else
+            {
+                messageForecast += "good weather"
+            }
         }
 
-        if(precipitationChange) {
-            message += ", precipitation increasing"
-        }
 
+        message += messageForecast
+        Log.i("messageForecast1", "${messageForecast}")
         return message
     }
 
@@ -788,8 +930,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun setupLocationClient() {
         locationRequest = LocationRequest.create().apply {
-            interval = 10000
-            fastestInterval = 5000
+            interval = 30000
+            fastestInterval = 25000
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         }
 
@@ -862,6 +1004,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onResume() {
         super.onResume()
         loadNotificationFrequency()
+
     }
 
 
