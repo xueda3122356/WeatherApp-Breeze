@@ -1,17 +1,13 @@
 package com.project491.weatherapp_breeze
 
 import android.Manifest
-import android.app.NotificationChannel
-import android.app.NotificationManager
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.drawable.Drawable
 import android.location.Geocoder
-import android.os.Build
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
@@ -55,15 +51,11 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import android.widget.Button
-import androidx.core.view.GravityCompat
-import com.project491.weatherapp_breeze.databinding.ActivityForecastPageBinding
-import com.squareup.picasso.Target
-import com.squareup.picasso.Transformation
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Calendar
 import java.util.Timer
+import java.util.TimerTask
 import kotlin.concurrent.timerTask
 import kotlin.math.abs
 
@@ -83,7 +75,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var minTemp: TextView
     var currentTemperature = 0
 
-    //
+
+    @SuppressLint("UseSwitchCompatOrMaterialCode")
     private lateinit var UnitSwitch: Switch
 
 
@@ -116,8 +109,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     var tempDifferent = 0
     var messageForecast = ""
     var highPercentage = false
+    var prevMessage = ""
 
     // Define the activity creation function
+    @SuppressLint("UseSwitchCompatOrMaterialCode")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Inflate the layout using view binding
@@ -126,8 +121,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         //createNotificationChannel()
         //setupNotificationButton()
-
-
 
 
         // Get the text view for displaying current temperature and weather
@@ -147,6 +140,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
         setupLocationClient()
+
+
 
         //create notification
         //createNotification()
@@ -239,8 +234,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         } else {
             actionView.setOnCheckedChangeListener { _, isChecked ->
                 // Handle switch check/change event here
-                val location = cityTextView.text.toString()
-                Log.i("Switch", "${location}")
+                val location = cityTextView.text.toString() ?: "fullerton"
                 if(isChecked){
                     getCurrentDataFahrenheit(location)
                     getForecastDataFahrenheit(location)
@@ -252,7 +246,55 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
 
+
         // check the frequency of pushing notification
+        loadDataForNotification()
+
+        /* val date = Date()
+         val cal = Calendar.getInstance()
+         Log.i("calender", "${cal.get(Calendar.HOUR_OF_DAY)}")*/
+
+    }
+
+    private fun loadDataForNotification() {
+        GlobalScope.launch(Dispatchers.IO) {
+            val data = fetchData()
+
+            withContext(Dispatchers.Main) {
+                celciusForecastArray = data
+                checkNotification()
+            }
+        }
+
+    }
+
+    private suspend fun fetchData(): ArrayList<ForecastData> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = RetrofitInstance.apiForecast.getForecast(
+                    loadLocation()!!, units = "metric", applicationContext.getString(R.string.api_key)
+                )
+                if (response.isSuccessful && response.body() != null) {
+                    response.body()!!.list as ArrayList<ForecastData>
+                } else {
+                    arrayListOf() // Return an empty list or throw an exception
+                }
+            } catch (e: IOException) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(applicationContext, "app error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+                arrayListOf() // Return an empty list or handle the error as appropriate
+            } catch (e: HttpException) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(applicationContext, "http error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+                arrayListOf() // Return an empty list or handle the error as appropriate
+            }
+        }
+    }
+
+
+    private fun checkNotification() {
         if(loadNotificationFrequency()!! == "one_hour_noti")
         {
             checkWeatherBaseOnFrequency(3600000,3600000)
@@ -270,14 +312,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             Log.i("Frequency", "never")
         }
 
-        val date = Date()
-        val cal = Calendar.getInstance()
-        Log.i("calender", "${cal.get(Calendar.HOUR_OF_DAY)}")
-
     }
 
     private fun calTempDifferent() {
         val hoursAhead = 2
+        tempDifferent = 0
+        tempIncrease = false
+        tempDecrease = true
 
         // Check temperature
         var temperature = emptyArray<Int>()
@@ -286,6 +327,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         }
 
+        tempDifferent += currentTemperature - temperature[0]
+        Log.i("current", "${currentTemperature}")
         for(i in 0 .. hoursAhead-1)
         {
             tempDifferent += temperature[i] - temperature[i+1]
@@ -599,7 +642,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
                     }
-                    
+
 
                     modifyHeader(data.name)
 
@@ -625,52 +668,48 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     }
 
-   /* private fun createNotification(){
-        val notificationId = 101 // or any other unique integer
-        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.notification_icon)
-            .setContentTitle("Sample Notification")
-            .setContentText("This is an example")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+    /* private fun createNotification(){
+         val notificationId = 101 // or any other unique integer
+         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+             .setSmallIcon(R.drawable.notification_icon)
+             .setContentTitle("Sample Notification")
+             .setContentText("This is an example")
+             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
-        with(NotificationManagerCompat.from(this)) {
-            if (ActivityCompat.checkSelfPermission(
-                    this@MainActivity,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return
-            }
-            notify(notificationId, builder.build())
-        }
-    }*/
+         with(NotificationManagerCompat.from(this)) {
+             if (ActivityCompat.checkSelfPermission(
+                     this@MainActivity,
+                     Manifest.permission.POST_NOTIFICATIONS
+                 ) != PackageManager.PERMISSION_GRANTED
+             ) {
+                 // TODO: Consider calling
+                 //    ActivityCompat#requestPermissions
+                 // here to request the missing permissions, and then overriding
+                 //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                 //                                          int[] grantResults)
+                 // to handle the case where the user grants the permission. See the documentation
+                 // for ActivityCompat#requestPermissions for more details.
+                 return
+             }
+             notify(notificationId, builder.build())
+         }
+     }*/
 
 
-    private fun sendNotification(){
-
-        var message = weatherLookAhead()
+    private fun sendNotification(message:String){
 
         val intent: Intent = Intent(this, ForecastPage::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-            intent.putExtra("tempIncrease", tempIncrease)
-            Log.i("tempIncrease", "${tempIncrease}")
-            intent.putExtra("tempDecrease", tempDecrease)
-            Log.i("tempDecrease", "${tempDecrease}")
-            intent.putExtra("tempDifferent", tempDifferent)
-            Log.i("tempDifferent", "$tempDifferent")
-            intent.putExtra("message", messageForecast)
-            Log.i("messageForecast", "$messageForecast")
-            tempIncrease = false
-            tempDecrease = false
-            tempDifferent = 0
+        intent.putExtra("tempIncrease", tempIncrease)
+        Log.i("tempIncrease", "${tempIncrease}")
+        intent.putExtra("tempDecrease", tempDecrease)
+        Log.i("tempDecrease", "${tempDecrease}")
+        intent.putExtra("tempDifferent", tempDifferent)
+        Log.i("tempDifferent", "$tempDifferent")
+        intent.putExtra("message", messageForecast)
+        Log.i("messageForecast", "$messageForecast")
+
 
 
         val pendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
@@ -716,24 +755,62 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
 
-    private fun checkWeatherBaseOnFrequency(delay: Long, period: Long){
+    /*private fun checkWeatherBaseOnFrequency(delay: Long, period: Long){
         val timer = Timer()
-
+        val message = weatherLookAhead()
         timer.scheduleAtFixedRate(timerTask {
-            sendNotification()
+            if((tempDifferent >= 5 && currentTemperature >= 20 && tempIncrease)
+                || (tempDifferent >= 5 && currentTemperature <= 10 && tempDecrease)
+                || highPercentage == true)
+            {
+                highPercentage = false
+                Log.i("message2", "${messageForecast} ${tempDecrease}  ${tempIncrease}")
+                val prevMessage = loadMessage()
+                if(message != prevMessage)
+                {
+                    sendNotification(message)
+                }
+                saveMessage(message)
+            }
+            sendNotification(message)
             }, delay, period)
             Log.i("delay", "${delay}")
 
 
+    }*/
+
+    private fun checkWeatherBaseOnFrequency(delay: Long, period: Long) {
+        val timer = Timer()
+        val message = weatherLookAhead()
+        val timerTask = object : TimerTask() {
+            override fun run() {
+                if (tempDifferent >= 5 && (currentTemperature >= 20 && tempIncrease || currentTemperature <= 10 && tempDecrease) || highPercentage) {
+                    highPercentage = false
+                    prevMessage = loadMessage()!!
+                    if(message != prevMessage)
+                    {
+                        sendNotification(message)
+                        saveMessage(message)
+                        cancel()
+                        timer.cancel()
+                    }
+                }
+                sendNotification(message)
+            }
+        }
+        timer.scheduleAtFixedRate(timerTask, delay, period)
+        Log.i("delay", "$delay")
     }
+
 
     private fun weatherLookAhead(): String {
 
         var message = ""
         messageForecast = ""
 
-        refreshCurrentDataCelsius(loadLocation()!!)
+
         refreshForecastDataCelsius(loadLocation()!!)
+        refreshCurrentDataCelsius(loadLocation()!!)
 
         calTempDifferent()
 
@@ -852,7 +929,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
         }
 
-
         message += messageForecast
         Log.i("messageForecast1", "${messageForecast}")
         return message
@@ -866,9 +942,25 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }.apply()
     }
 
-    private fun loadLocation(): String? {
+    private fun loadLocation(): String?
+    {
         val sharedPreferences = getSharedPreferences("sharedPrefs", Context.MODE_PRIVATE)
         return sharedPreferences.getString("STRING_KEY", "92831")
+    }
+
+    private fun saveMessage(message: String)
+    {
+        val sharedPreferences = getSharedPreferences("sharedPrefsMessage", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.apply{
+            putString("MESSAGE", message)
+        }.apply()
+    }
+
+    private fun loadMessage(): String?
+    {
+        val sharedPreferences = getSharedPreferences("sharedPrefsMessage", Context.MODE_PRIVATE)
+        return sharedPreferences.getString("MESSAGE", "good weather")
     }
 
     private fun modifyHeader(location: String) {
@@ -995,11 +1087,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
     }
-
-    /*override fun onPause() {
-        super.onPause()
-        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
-    }*/
 
     override fun onResume() {
         super.onResume()
