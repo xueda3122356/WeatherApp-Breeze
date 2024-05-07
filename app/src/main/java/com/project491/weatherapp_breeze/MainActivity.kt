@@ -75,6 +75,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var minTemp: TextView
     var currentTemperature = 0
 
+    // Declare variable for current location
+    private lateinit var currentLocation: TextView
+
 
     @SuppressLint("UseSwitchCompatOrMaterialCode")
     private lateinit var UnitSwitch: Switch
@@ -170,30 +173,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         }
 
-        // Call the getMyData function with a default zip code
-        //getMyData("92831")
+        // Call the weather api function
         getCurrentDataCelsius(loadLocation()!!)
         getForecastDataCelsius(loadLocation()!!)
 
 
-        // Get the city text views
+        // Get the city text view
         cityTextView = binding.headerLocationNameCity
 
-        // Set the headerLocationName TextView to horizontally scroll if it's one word and too long
-        //binding.headerLocationName.setHorizontallyScrolling(true)
+        // Get the current location text view
+        currentLocation = binding.tvCurrentLocation
 
-        // set a click listener on the Forecast button
-        /*binding.ForecastButton.setOnClickListener(){
-            val intent = Intent(this, ForecastPage::class.java)
-            calTempDifferent()
-            weatherLookAhead()
-            intent.putExtra("tempIncrease", tempIncrease)
-            intent.putExtra("tempDecrease", tempDecrease)
-            intent.putExtra("tempDifferent", tempDifferent)
-            intent.putExtra("message", messageForecast)
-            startActivity(intent)
-            messageForecast = ""
-        }*/
+        // Set the headerLocationName and currentlocation TextView to horizontally scroll if it's one word and too long
+        binding.headerLocationNameCity.setHorizontallyScrolling(true)
+        binding.tvCurrentLocation.setHorizontallyScrolling(true)
 
         // setup toolbar and navigation drawer
         binding.apply {
@@ -234,7 +227,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         } else {
             actionView.setOnCheckedChangeListener { _, isChecked ->
                 // Handle switch check/change event here
-                val location = cityTextView.text.toString() ?: "fullerton"
+                val location = cityTextView.text.toString()
                 if(isChecked){
                     getCurrentDataFahrenheit(location)
                     getForecastDataFahrenheit(location)
@@ -248,11 +241,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
         // check the frequency of pushing notification
-        loadDataForNotification()
-
-        /* val date = Date()
-         val cal = Calendar.getInstance()
-         Log.i("calender", "${cal.get(Calendar.HOUR_OF_DAY)}")*/
+        //loadDataForNotification()
+        checkNotification()
 
     }
 
@@ -297,7 +287,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun checkNotification() {
         if(loadNotificationFrequency()!! == "one_hour_noti")
         {
-            checkWeatherBaseOnFrequency(3600000,3600000)
+            checkWeatherBaseOnFrequency(10000,10000)
         }
         else if(loadNotificationFrequency()!! == "three_hours_noti")
         {
@@ -361,28 +351,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
 
     }
-
-    /*private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = getString(R.string.channel_name)
-            val descriptionText = getString(R.string.channel_description)
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-                description = descriptionText
-            }
-            // Register the channel with the system
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-    }*/
-
-    /*private fun setupNotificationButton() {
-        val notifyButton = findViewById<Button>(R.id.notifyButton)
-        notifyButton.setOnClickListener {
-            createNotification()
-        }
-    }*/
 
     // Define a function to retrieve weather data from the API
 
@@ -781,9 +749,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun checkWeatherBaseOnFrequency(delay: Long, period: Long) {
         val timer = Timer()
-        val message = weatherLookAhead()
         val timerTask = object : TimerTask() {
             override fun run() {
+                val message = weatherLookAhead()
                 if (tempDifferent >= 5 && (currentTemperature >= 20 && tempIncrease || currentTemperature <= 10 && tempDecrease) || highPercentage) {
                     highPercentage = false
                     prevMessage = loadMessage()!!
@@ -808,13 +776,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         var message = ""
         messageForecast = ""
 
+        val location = loadLocation()!!
+        Log.i("location", "${location}")
 
-        refreshForecastDataCelsius(loadLocation()!!)
-        refreshCurrentDataCelsius(loadLocation()!!)
+        refreshForecastDataCelsius(location)
+        refreshCurrentDataCelsius(location)
 
         calTempDifferent()
 
-        message += "${loadLocation()!!}: "
+        message += "${location}: "
         message += "Temp: ${celciusForecastArray[0].main.temp.toInt()} °C "
         message += "Rain: ${(celciusForecastArray[0].pop * 100).toInt()} % "
         message += "Wind: ${celciusForecastArray[0].wind.speed} Km/H \n"
@@ -1022,8 +992,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun setupLocationClient() {
         locationRequest = LocationRequest.create().apply {
-            interval = 30000
-            fastestInterval = 25000
+            interval = 10000
+            fastestInterval = 5000
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         }
 
@@ -1036,15 +1006,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     try{
                         // Use geocoder to get city name
                         val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                        Log.i("address", "${addresses}")
                         if(addresses != null)
                         {
                             val address = addresses[0]
                             val locationName =address.locality
-                            Log.i("location", "${locationName} ${location.latitude} ${location.longitude}")
+                            Log.i("location", "${locationName} ${location.latitude} ${location.longitude}  ${address.locality}")
 
                             // save city name
                             saveLocation(locationName)
-                            Log.i("location", "${locationName}")
+
+                            // set location to current location TextView
+                            currentLocation.text = "${locationName}"
 
 
                         }
@@ -1063,12 +1036,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 locationPermissionCode)
         } else {
             // Permission has already been granted, start location updates
-            startLocationUpdates()
+            //startLocationUpdates()
+            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
         }
     }
 
-    private fun startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(
+   /* private fun startLocationUpdates() {
+        /*if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
@@ -1084,9 +1058,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
             return
-        }
+        }*/
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
-    }
+    }*/
 
     override fun onResume() {
         super.onResume()

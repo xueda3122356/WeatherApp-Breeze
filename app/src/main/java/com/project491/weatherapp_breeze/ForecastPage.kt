@@ -21,6 +21,7 @@ class ForecastPage : AppCompatActivity() {
         btBack.setOnClickListener(){
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
+            finish()
         }
     }
 

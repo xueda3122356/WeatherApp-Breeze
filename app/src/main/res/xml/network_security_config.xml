@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+<base-config cleartextTrafficPermitted="true">
+    <trust-anchors>
+        <!-- Trust preinstalled CAs -->
+        <certificates src="system" />
+        <!-- Additionally trust user added CAs -->
+        <certificates src="user" />
+    </trust-anchors>
+    <tls-versions>
+        <tls-version>TLSv1.2</tls-version>
+        <tls-version>TLSv1.3</tls-version>
+    </tls-versions>
+</base-config>
+</network-security-config>
+
